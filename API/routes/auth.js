@@ -83,20 +83,24 @@ router.post("/google-signin", async (req, res) => {
 router.put("/grade", verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-    const { grade } = response.data;
+    const { grade } = req.body;
 
     if (!grade) {
-      res.status(403).json({
+      return res.status(403).json({
         message: "Please select a grade",
       });
     }
 
     user.grade = grade;
     await user.save();
+
     return res.status(200).json(user);
   } catch (error) {
-    console.error(err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    console.error(error);
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
 });
 

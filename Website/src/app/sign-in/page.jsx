@@ -33,7 +33,7 @@ export default function Login() {
         token,
       });
       localStorage.setItem("data-traffic-auth", response.data.token);
-      router.push("/dashboard");
+      router.push("/grade");
     } catch (error) {
       console.error(
         "Google login failed:",

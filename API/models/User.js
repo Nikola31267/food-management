@@ -39,7 +39,7 @@ const userSchema = new mongoose.Schema({
     default: "student",
   },
   grade: {
-    type: Number,
+    type: String,
   },
 
   orders: [dayOrderSchema],
