@@ -9,8 +9,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { axiosInstance } from "@/lib/axios";
+import { useRouter } from "next/navigation";
+import Loader from "@/components/layout/Loader";
 
 const CLASSES = {
   8: ["8а", "8б", "8в"],
@@ -23,6 +25,38 @@ const CLASSES = {
 export default function DropdownMenuBasic() {
   const [selectedGrade, setSelectedGrade] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingAuth, setLoadingAuth] = useState(true);
+  const [user, setUser] = useState(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkAuthAndAccess = async () => {
+      if (!localStorage.getItem("data-traffic-auth")) {
+        router.push("/sign-in");
+        return;
+      }
+
+      try {
+        const response = await axiosInstance.get("/auth/user", {
+          headers: {
+            "x-auth-token": localStorage.getItem("data-traffic-auth"),
+          },
+        });
+        setUser(response.data);
+
+        if (response.data.grade) {
+          router.push("/dashboard");
+        } else {
+          setLoadingAuth(false);
+        }
+      } catch (error) {
+        setError("Failed to fetch user data");
+        router.push("/sign-in");
+      }
+    };
+
+    checkAuthAndAccess();
+  }, [router]);
 
   const handleSave = async () => {
     if (!selectedGrade) {
@@ -44,6 +78,7 @@ export default function DropdownMenuBasic() {
       );
 
       alert("Grade saved successfully ✅");
+      router.push("/dashboard");
     } catch (err) {
       console.error(err);
       alert("Failed to save grade");
@@ -51,6 +86,10 @@ export default function DropdownMenuBasic() {
       setLoading(false);
     }
   };
+
+  if (loadingAuth) {
+    return <Loader />;
+  }
 
   return (
     <div className="flex gap-3 items-center">

@@ -65,11 +65,7 @@ router.post("/google-signin", async (req, res) => {
     return res.status(200).json({
       message: "Signed in successfully",
       token: jwtToken,
-      user: {
-        email: user.email,
-        fullName: user.fullName,
-        role: user.role,
-      },
+      user,
     });
   } catch (error) {
     console.error("Google sign-in error:", error);

@@ -1,4 +1,3 @@
-import SupportIcon from "@/components/SupportIcon";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { getSEOTags } from "@/lib/seo";
