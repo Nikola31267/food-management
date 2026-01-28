@@ -66,12 +66,24 @@ const Dashboard = () => {
             />
           </Link>
         </div>
-        <Button
-          onClick={handleLogout}
-          className="block w-full text-left px-4 py-2 text-sm text-gray-700 bg-transparent border-none cursor-pointer transition-colors hover:bg-gray-100"
-        >
-          Sign out
-        </Button>
+        <div className="flex items-center">
+          {user?.role == "admin" ? (
+            <Link
+              className="block w-full text-left text-sm text-gray-700 bg-transparent border-none cursor-pointer transition-colors hover:bg-gray-100"
+              href="/admin"
+            >
+              Admin
+            </Link>
+          ) : (
+            <></>
+          )}
+          <Button
+            onClick={handleLogout}
+            className="block w-full text-left text-sm text-gray-700 bg-transparent border-none cursor-pointer transition-colors hover:bg-gray-100"
+          >
+            Sign out
+          </Button>
+        </div>
       </div>
       {error && <p className="text-red-500 mb-4">{error}</p>}
       <h1>Имейл: {user?.email}</h1>
