@@ -5,6 +5,7 @@ import cors from "cors";
 import bodyParser from "body-parser";
 
 import authRoutes from "./routes/auth.js";
+import menuRoutes from "./routes/menu.js";
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", cors(corsOptions), authRoutes);
+app.use("/api/menu", cors(corsOptions), menuRoutes);
 
 if (process.env.NODE_ENV !== "production") {
   app.listen(8000, () => {

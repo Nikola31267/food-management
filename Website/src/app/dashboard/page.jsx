@@ -12,6 +12,7 @@ const Dashboard = () => {
   const [user, setUser] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [menus, setMenus] = useState([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -43,9 +44,48 @@ const Dashboard = () => {
     checkAuthAndAccess();
   }, [router]);
 
+  useEffect(() => {
+    const fetchMenu = async () => {
+      try {
+        const res = await axiosInstance.get("/menu");
+        setMenus(res.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMenu();
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem("data-traffic-auth");
     window.location.href = "/sign-in";
+  };
+
+  const deleteMeal = async (day, mealId) => {
+    try {
+      await axiosInstance.delete(`/menu/${day}/${mealId}`, {
+        headers: {
+          "x-auth-token": localStorage.getItem("data-traffic-auth"),
+        },
+      });
+
+      // update UI immediately
+      setMenus((prev) =>
+        prev.map((d) =>
+          d.day === day
+            ? {
+                ...d,
+                meals: d.meals.filter((m) => m._id !== mealId),
+              }
+            : d,
+        ),
+      );
+    } catch (err) {
+      alert("Failed to delete meal");
+    }
   };
 
   if (loading) {
@@ -90,6 +130,54 @@ const Dashboard = () => {
       <h1>Имена: {user?.fullName}</h1>
 
       <h1>Клас: {user?.grade}</h1>
+
+      <h1 className="text-3xl font-bold text-center">Weekly Menu</h1>
+
+      {menus.map((dayMenu) => (
+        <div key={dayMenu._id} className="border rounded-lg overflow-hidden">
+          <h2 className="bg-gray-100 p-3 text-xl font-semibold">
+            {dayMenu.day}
+          </h2>
+
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-50 border-b">
+                <th className="p-2 text-left">Meal</th>
+                <th className="p-2 text-left">Price</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {dayMenu.meals.length === 0 ? (
+                <tr>
+                  <td colSpan="2" className="p-3 text-center text-gray-500">
+                    No meals added
+                  </td>
+                </tr>
+              ) : (
+                dayMenu.meals.map((meal, index) => (
+                  <tr key={meal._id} className="border-b">
+                    <td className="p-2">{meal.name}</td>
+                    <td className="p-2">${meal.price}</td>
+
+                    {user?.role == "admin" && (
+                      <td className="p-2 text-center">
+                        <button
+                          onClick={() => deleteMeal(dayMenu.day, meal._id)}
+                          className="text-red-600 hover:text-red-800 text-lg"
+                          title="Delete meal"
+                        >
+                          🗑
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      ))}
     </div>
   );
 };

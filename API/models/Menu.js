@@ -1,19 +1,9 @@
 import mongoose from "mongoose";
-const mongoose = require("mongoose");
 
-const mealSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    description: String,
-    price: Number,
-    image: String,
-  },
-  { _id: false },
-);
+const mealSchema = new mongoose.Schema({
+  name: String,
+  price: Number,
+});
 
 const dailyMenuSchema = new mongoose.Schema(
   {
@@ -39,4 +29,6 @@ const dailyMenuSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-module.exports = mongoose.model("DailyMenu", dailyMenuSchema);
+const DailyMenu = mongoose.model("DailyMenu", dailyMenuSchema);
+
+export default DailyMenu;
