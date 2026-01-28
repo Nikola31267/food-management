@@ -76,26 +76,6 @@ const Dashboard = () => {
     window.location.href = "/sign-in";
   };
 
-  const deleteMeal = async (day, mealId) => {
-    try {
-      await axiosInstance.delete(`/menu/${day}/${mealId}`, {
-        headers: {
-          "x-auth-token": localStorage.getItem("data-traffic-auth"),
-        },
-      });
-
-      setMenus((prev) =>
-        prev.map((d) =>
-          d.day === day
-            ? { ...d, meals: d.meals.filter((m) => m._id !== mealId) }
-            : d,
-        ),
-      );
-    } catch (err) {
-      alert("Failed to delete meal");
-    }
-  };
-
   const addMealToOrder = (day, meal) => {
     if (hasOrdered) return;
     setWeeklyOrder((prev) => {
