@@ -15,9 +15,9 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [menus, setMenus] = useState([]);
   const [weeklyOrder, setWeeklyOrder] = useState({});
+  const [savedOrder, setSavedOrder] = useState(null);
   const router = useRouter();
 
-  // Calculate total price for all days
   const totalPrice = Object.values(weeklyOrder)
     .flat()
     .reduce((sum, meal) => sum + meal.price * meal.quantity, 0);
@@ -39,6 +39,7 @@ const Dashboard = () => {
 
         if (response.data.orders && response.data.orders.length > 0) {
           setHasOrdered(true);
+          setSavedOrder(response.data.orders[0]);
         }
 
         if (!response.data.grade) {
@@ -125,12 +126,59 @@ const Dashboard = () => {
     });
   };
 
+  const increaseQuantity = (day, mealId) => {
+    setWeeklyOrder((prev) => ({
+      ...prev,
+      [day]: prev[day].map((m) =>
+        m.mealId === mealId ? { ...m, quantity: m.quantity + 1 } : m,
+      ),
+    }));
+  };
+
+  const decreaseQuantity = (day, mealId) => {
+    setWeeklyOrder((prev) => {
+      const updatedMeals = prev[day]
+        .map((m) =>
+          m.mealId === mealId ? { ...m, quantity: m.quantity - 1 } : m,
+        )
+        .filter((m) => m.quantity > 0);
+
+      if (updatedMeals.length === 0) {
+        const copy = { ...prev };
+        delete copy[day];
+        return copy;
+      }
+
+      return {
+        ...prev,
+        [day]: updatedMeals,
+      };
+    });
+  };
+
+  const removeMeal = (day, mealId) => {
+    setWeeklyOrder((prev) => {
+      const updatedMeals = prev[day].filter((m) => m.mealId !== mealId);
+
+      if (updatedMeals.length === 0) {
+        const copy = { ...prev };
+        delete copy[day];
+        return copy;
+      }
+
+      return {
+        ...prev,
+        [day]: updatedMeals,
+      };
+    });
+  };
+
   const submitWeeklyOrder = async () => {
     if (hasOrdered) return;
     try {
       await axiosInstance.post(
         "/order",
-        { weeklyOrder, totalPrice }, // include totalPrice
+        { weeklyOrder, totalPrice },
         {
           headers: {
             "x-auth-token": localStorage.getItem("data-traffic-auth"),
@@ -138,6 +186,17 @@ const Dashboard = () => {
         },
       );
       alert(`Order submitted successfully! Total: $${totalPrice}`);
+      setSavedOrder({
+        days: Object.keys(weeklyOrder).map((day) => ({
+          day,
+          meals: weeklyOrder[day].map((m) => ({
+            mealName: m.name,
+            quantity: m.quantity,
+            price: m.price,
+          })),
+        })),
+        totalPrice,
+      });
       setWeeklyOrder({});
       setHasOrdered(true);
     } catch (err) {
@@ -182,17 +241,32 @@ const Dashboard = () => {
 
       {error && <p className="text-red-500 mb-4">{error}</p>}
 
-      <h1>Имейл: {user?.email}</h1>
-      <h1>Имена: {user?.fullName}</h1>
-      <h1>Клас: {user?.grade}</h1>
-
       <h1 className="text-3xl font-bold text-center mb-6">Weekly Menu</h1>
 
-      {hasOrdered ? (
-        <div className="p-6 text-center bg-yellow-100 border rounded-lg">
-          <p className="font-semibold text-lg">
-            You have already submitted your weekly order and cannot order again.
-          </p>
+      {hasOrdered && savedOrder ? (
+        <div className="bg-green-50 border rounded-lg p-6">
+          <h2 className="text-2xl font-bold mb-4 text-center">
+            Your Weekly Order
+          </h2>
+
+          {savedOrder.days.map((day) => (
+            <div key={day.day} className="mb-4">
+              <h3 className="font-semibold text-lg">{day.day}</h3>
+
+              <ul className="ml-4 list-disc">
+                {day.meals.map((meal, index) => (
+                  <li key={index}>
+                    {meal.mealName} × {meal.quantity} = $
+                    {meal.price * meal.quantity}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+
+          <div className="mt-6 text-xl font-bold text-center">
+            Final Total: ${savedOrder.totalPrice}
+          </div>
         </div>
       ) : (
         menus.map((dayMenu) => (
@@ -249,26 +323,53 @@ const Dashboard = () => {
                   <h3 className="font-semibold mb-2">Selected:</h3>
                   <ul>
                     {weeklyOrder[dayMenu.day].map((meal) => (
-                      <li key={meal.mealId}>
-                        {meal.name} x {meal.quantity} = $
-                        {meal.price * meal.quantity}
+                      <li
+                        key={meal.mealId}
+                        className="flex items-center gap-3 mb-2"
+                      >
+                        <span className="w-32">{meal.name}</span>
+
+                        <button
+                          onClick={() =>
+                            decreaseQuantity(dayMenu.day, meal.mealId)
+                          }
+                          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                        >
+                          ➖
+                        </button>
+
+                        <span className="font-semibold w-6 text-center">
+                          {meal.quantity}
+                        </span>
+
+                        <button
+                          onClick={() =>
+                            increaseQuantity(dayMenu.day, meal.mealId)
+                          }
+                          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                        >
+                          ➕
+                        </button>
+
+                        <button
+                          onClick={() => removeMeal(dayMenu.day, meal.mealId)}
+                          className="ml-2 text-red-600 hover:text-red-800"
+                          title="Remove"
+                        >
+                          ❌
+                        </button>
+
+                        <span className="ml-auto font-semibold">
+                          ${meal.price * meal.quantity}
+                        </span>
                       </li>
                     ))}
                   </ul>
-                  <p className="font-bold mt-2">
-                    Total for {dayMenu.day}: $
-                    {weeklyOrder[dayMenu.day].reduce(
-                      (sum, m) => sum + m.price * m.quantity,
-                      0,
-                    )}
-                  </p>
                 </div>
               )}
           </div>
         ))
       )}
-
-      {/* Submit weekly order with total sum */}
       {!hasOrdered && (
         <div className="flex justify-center items-center mt-6 space-x-4">
           <p className="text-xl font-bold">Final Total: ${totalPrice}</p>

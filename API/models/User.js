@@ -23,12 +23,15 @@ const dayOrderSchema = new mongoose.Schema({
   meals: [mealSchema],
 });
 
-// New schema for a weekly order
 const weeklyOrderSchema = new mongoose.Schema({
-  days: [dayOrderSchema], // all days in this weekly order
+  days: [dayOrderSchema],
   totalPrice: {
     type: Number,
-    default: 0, // total sum for this weekly order
+    default: 0,
+  },
+  paid: {
+    type: Boolean,
+    default: false,
   },
   createdAt: {
     type: Date,
@@ -55,7 +58,7 @@ const userSchema = new mongoose.Schema({
     type: String,
   },
 
-  orders: [weeklyOrderSchema], // now each order contains days + totalPrice
+  orders: [weeklyOrderSchema],
 });
 
 const User = mongoose.models.User || mongoose.model("User", userSchema);

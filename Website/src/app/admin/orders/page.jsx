@@ -10,25 +10,59 @@ const AdminOrdersPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const fetchOrders = async () => {
+    try {
+      const res = await axiosInstance.get("/admin/orders", {
+        headers: { "x-auth-token": localStorage.getItem("data-traffic-auth") },
+      });
+      setOrdersData(res.data);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch orders");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const res = await axiosInstance.get("/admin/orders", {
+    fetchOrders();
+  }, []);
+
+  const markAsPaid = async (userId, orderId) => {
+    try {
+      await axiosInstance.put(
+        `/admin/orders/paid/${userId}/${orderId}`,
+        {},
+        {
           headers: {
             "x-auth-token": localStorage.getItem("data-traffic-auth"),
           },
-        });
-        setOrdersData(res.data);
-      } catch (err) {
-        console.error(err);
-        setError("Failed to fetch orders");
-      } finally {
-        setLoading(false);
-      }
-    };
+        },
+      );
+      alert("Order marked as paid ✅");
+      fetchOrders();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to mark order as paid ❌");
+    }
+  };
 
-    fetchOrders();
-  }, []);
+  const deleteOrder = async (userId, orderId) => {
+    if (!confirm("Are you sure you want to delete this order?")) return;
+
+    try {
+      await axiosInstance.delete(`/admin/orders/${userId}/${orderId}`, {
+        headers: {
+          "x-auth-token": localStorage.getItem("data-traffic-auth"),
+        },
+      });
+      alert("Order deleted successfully 🗑️");
+      fetchOrders();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete order ❌");
+    }
+  };
 
   if (loading) return <Loader />;
 
@@ -49,37 +83,55 @@ const AdminOrdersPage = () => {
                 <th className="border p-2">Grade</th>
                 <th className="border p-2">Orders</th>
                 <th className="border p-2">Total Price</th>
+                <th className="border p-2">Paid</th>
+                <th className="border p-2">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {ordersData.map((user) => (
-                <tr key={user._id} className="border-b">
-                  <td className="border p-2">{user.fullName}</td>
-                  <td className="border p-2">{user.grade}</td>
-                  <td className="border p-2">
-                    {user.orders.map((week, idx) => (
-                      <div key={idx} className="mb-4">
-                        {week.days.map((day) => (
-                          <div key={day.day} className="mb-2">
-                            <strong>{day.day}:</strong>
-                            <ul className="ml-4">
-                              {day.meals.map((meal) => (
-                                <li key={meal.mealName}>
-                                  {meal.mealName} x {meal.quantity} = $
-                                  {meal.price * meal.quantity}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ))}
-                      </div>
-                    ))}
-                  </td>
-                  <td className="border p-2 font-bold">
-                    ${user.orders.reduce((sum, w) => sum + w.totalPrice, 0)}
-                  </td>
-                </tr>
-              ))}
+              {ordersData.map((user) =>
+                user.orders.map((week, idx) => (
+                  <tr key={`${user._id}-${week._id}`} className="border-b">
+                    <td className="border p-2">{user.fullName}</td>
+                    <td className="border p-2">{user.grade}</td>
+                    <td className="border p-2">
+                      {week.days.map((day) => (
+                        <div key={day.day} className="mb-2">
+                          <strong>{day.day}:</strong>
+                          <ul className="ml-4">
+                            {day.meals.map((meal) => (
+                              <li key={meal.mealName}>
+                                {meal.mealName} x {meal.quantity} = $
+                                {meal.price * meal.quantity}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </td>
+                    <td className="border p-2 font-bold">${week.totalPrice}</td>
+                    <td className="border p-2 text-center">
+                      {week.paid ? (
+                        <span className="text-green-600 font-bold">Paid</span>
+                      ) : (
+                        <button
+                          onClick={() => markAsPaid(user._id, week._id)}
+                          className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        >
+                          Mark as Paid
+                        </button>
+                      )}
+                    </td>
+                    <td className="border p-2 text-center">
+                      <button
+                        onClick={() => deleteOrder(user._id, week._id)}
+                        className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                )),
+              )}
             </tbody>
           </table>
         </div>

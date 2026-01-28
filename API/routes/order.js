@@ -23,7 +23,8 @@ router.post("/", verifyToken, async (req, res) => {
 
     const weeklyOrderObj = {
       days: [],
-      totalPrice: totalPrice, // save total here
+      totalPrice: totalPrice,
+      paid: false,
     };
 
     for (const day in weeklyOrder) {
