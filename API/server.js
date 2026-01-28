@@ -6,6 +6,8 @@ import bodyParser from "body-parser";
 
 import authRoutes from "./routes/auth.js";
 import menuRoutes from "./routes/menu.js";
+import orderRoutes from "./routes/order.js";
+import adminRoutes from "./routes/admin.js";
 
 dotenv.config();
 
@@ -26,6 +28,8 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", cors(corsOptions), authRoutes);
 app.use("/api/menu", cors(corsOptions), menuRoutes);
+app.use("/api/order", cors(corsOptions), orderRoutes);
+app.use("/api/admin", cors(corsOptions), adminRoutes);
 
 if (process.env.NODE_ENV !== "production") {
   app.listen(8000, () => {

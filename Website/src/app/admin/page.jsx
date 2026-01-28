@@ -5,6 +5,7 @@ import { axiosInstance } from "@/lib/axios";
 import Loader from "@/components/layout/Loader";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 const AdminPage = () => {
   const [user, setUser] = useState(null);
@@ -86,6 +87,7 @@ const AdminPage = () => {
   return (
     <div className="p-6 max-w-xl mx-auto space-y-4">
       <h1 className="text-2xl font-bold">Daily Menu</h1>
+      <Link href="/admin/orders">Orders</Link>
 
       {/* DAY */}
       <select
