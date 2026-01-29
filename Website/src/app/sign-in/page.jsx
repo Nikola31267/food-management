@@ -33,6 +33,9 @@ export default function Login() {
         token,
       });
       localStorage.setItem("data-traffic-auth", response.data.token);
+      if (response.data.user.role == "teacher") {
+        router.push("/dashboard");
+      }
       router.push("/grade");
     } catch (error) {
       console.error(

@@ -12,6 +12,34 @@ const AdminOrdersPage = () => {
   const [error, setError] = useState("");
   const router = useRouter();
 
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (localStorage.getItem("data-traffic-auth")) {
+        try {
+          const response = await axiosInstance.get("/auth/user", {
+            headers: {
+              "x-auth-token": localStorage.getItem("data-traffic-auth"),
+            },
+          });
+          if (response.data.role != "admin") {
+            router.push("/dashboard");
+          }
+        } catch (error) {
+          setError("Error fetching user profile");
+          console.error(error);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+        setUser(null);
+        router.push("/sign-in");
+      }
+    };
+
+    fetchUserProfile();
+  }, [router]);
+
   // ============================
   // CSV EXPORT FUNCTION
   // ============================

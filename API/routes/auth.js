@@ -42,15 +42,16 @@ router.post("/google-signin", async (req, res) => {
     let user = await User.findOne({ email });
 
     const role = email.startsWith("et.") ? "student" : "teacher";
+    const grade = role === "teacher" ? "teacher" : undefined;
 
     if (!user) {
       user = await User.create({
         email,
         fullName,
         role,
+        grade,
       });
     }
-
     const jwtToken = jwt.sign(
       {
         id: user._id,
