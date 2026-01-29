@@ -12,6 +12,62 @@ const AdminOrdersPage = () => {
   const [error, setError] = useState("");
   const router = useRouter();
 
+  // ============================
+  // CSV EXPORT FUNCTION
+  // ============================
+  const downloadCSV = () => {
+    const rows = [];
+
+    rows.push(["Name", "Grade", "Orders", "Total Price", "Paid"]);
+
+    ordersData.forEach((user) => {
+      user.orders.forEach((week) => {
+        let ordersText = "";
+
+        week.days.forEach((day) => {
+          ordersText += `${day.day}: `;
+
+          const mealsText = day.meals
+            .map(
+              (meal) =>
+                `${meal.mealName} x${meal.quantity} ($${
+                  meal.price * meal.quantity
+                })`,
+            )
+            .join(" | ");
+
+          ordersText += mealsText + " || ";
+        });
+
+        rows.push([
+          user.fullName,
+          user.grade,
+          ordersText.trim(),
+          week.totalPrice,
+          week.paid ? "Yes" : "No",
+        ]);
+      });
+    });
+
+    const csvContent = rows
+      .map((row) =>
+        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
+      )
+      .join("\n");
+
+    const blob = new Blob([csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "student-orders.csv";
+    link.click();
+
+    URL.revokeObjectURL(url);
+  };
+
   const fetchOrders = async () => {
     try {
       const res = await axiosInstance.get("/admin/orders", {
@@ -71,7 +127,20 @@ const AdminOrdersPage = () => {
   return (
     <div className="p-8 min-h-screen bg-gray-100">
       <h1 className="text-3xl font-bold mb-6">All Users Orders</h1>
-      <Link href="/admin">Back</Link>
+
+      <div className="flex gap-4 mb-4">
+        <Link href="/admin" className="text-blue-600 underline">
+          Back
+        </Link>
+
+        <button
+          onClick={downloadCSV}
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+        >
+          Export Orders CSV
+        </button>
+      </div>
+
       {error && <p className="text-red-500 mb-4">{error}</p>}
 
       {ordersData.length === 0 ? (
@@ -91,7 +160,7 @@ const AdminOrdersPage = () => {
             </thead>
             <tbody>
               {ordersData.map((user) =>
-                user.orders.map((week, idx) => (
+                user.orders.map((week) => (
                   <tr key={`${user._id}-${week._id}`} className="border-b">
                     <td className="border p-2">{user.fullName}</td>
                     <td className="border p-2">{user.grade}</td>

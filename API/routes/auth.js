@@ -41,11 +41,13 @@ router.post("/google-signin", async (req, res) => {
 
     let user = await User.findOne({ email });
 
+    const role = email.startsWith("et.") ? "student" : "teacher";
+
     if (!user) {
       user = await User.create({
         email,
         fullName,
-        role: "student",
+        role,
       });
     }
 
