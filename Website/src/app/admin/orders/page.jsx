@@ -40,40 +40,34 @@ const AdminOrdersPage = () => {
     fetchUserProfile();
   }, [router]);
 
-  // ============================
-  // CSV EXPORT FUNCTION
-  // ============================
-  const downloadCSV = () => {
-    const rows = [];
-
-    rows.push(["Name", "Grade", "Orders", "Total Price", "Paid"]);
+  const downloadFoodByClassCSV = () => {
+    const classFoodMap = {};
 
     ordersData.forEach((user) => {
+      const grade = user.grade;
+
+      if (!classFoodMap[grade]) {
+        classFoodMap[grade] = {};
+      }
+
       user.orders.forEach((week) => {
-        let ordersText = "";
-
         week.days.forEach((day) => {
-          ordersText += `${day.day}: `;
+          day.meals.forEach((meal) => {
+            if (!classFoodMap[grade][meal.mealName]) {
+              classFoodMap[grade][meal.mealName] = 0;
+            }
 
-          const mealsText = day.meals
-            .map(
-              (meal) =>
-                `${meal.mealName} x${meal.quantity} ($${
-                  meal.price * meal.quantity
-                })`,
-            )
-            .join(" | ");
-
-          ordersText += mealsText + " || ";
+            classFoodMap[grade][meal.mealName] += meal.quantity;
+          });
         });
+      });
+    });
+    const rows = [];
+    rows.push(["Class", "Meal", "Total Quantity"]);
 
-        rows.push([
-          user.fullName,
-          user.grade,
-          ordersText.trim(),
-          week.totalPrice,
-          week.paid ? "Yes" : "No",
-        ]);
+    Object.entries(classFoodMap).forEach(([grade, meals]) => {
+      Object.entries(meals).forEach(([mealName, quantity]) => {
+        rows.push([grade, mealName, quantity]);
       });
     });
 
@@ -90,7 +84,7 @@ const AdminOrdersPage = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "student-orders.csv";
+    link.download = "food-by-class.csv";
     link.click();
 
     URL.revokeObjectURL(url);
@@ -162,10 +156,10 @@ const AdminOrdersPage = () => {
         </Link>
 
         <button
-          onClick={downloadCSV}
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          onClick={downloadFoodByClassCSV}
+          className=" bg-purple-600 text-white rounded hover:bg-purple-700"
         >
-          Export Orders CSV
+          Export Food by Class
         </button>
       </div>
 
