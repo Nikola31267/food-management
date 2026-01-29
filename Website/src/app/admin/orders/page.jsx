@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import { axiosInstance } from "@/lib/axios";
 import Loader from "@/components/layout/Loader";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const AdminOrdersPage = () => {
   const [ordersData, setOrdersData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   const fetchOrders = async () => {
     try {

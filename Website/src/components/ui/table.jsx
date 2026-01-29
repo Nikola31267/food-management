@@ -1,86 +1,115 @@
-import * as React from "react"
+// ✅ Next.js (App Router) — JavaScript version
+// Upload PDF → Read text → Convert to CSV → Debug log
+// Works with menu-style PDFs
 
-import { cn } from "@/lib/utils"
+// ================================
+// 1️⃣ Install dependency
+// ================================
+// npm install pdfjs-dist
 
-const Table = React.forwardRef(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
-    <table
-      ref={ref}
-      className={cn("w-full caption-bottom text-sm", className)}
-      {...props} />
-  </div>
-))
-Table.displayName = "Table"
+// ================================
+// 2️⃣ app/page.js
+// ================================
 
-const TableHeader = React.forwardRef(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
-))
-TableHeader.displayName = "TableHeader"
+"use client";
 
-const TableBody = React.forwardRef(({ className, ...props }, ref) => (
-  <tbody
-    ref={ref}
-    className={cn("[&_tr:last-child]:border-0", className)}
-    {...props} />
-))
-TableBody.displayName = "TableBody"
+import { useState } from "react";
+import * as pdfjsLib from "pdfjs-dist";
 
-const TableFooter = React.forwardRef(({ className, ...props }, ref) => (
-  <tfoot
-    ref={ref}
-    className={cn(
-      "border-t bg-neutral-100/50 font-medium [&>tr]:last:border-b-0 dark:bg-neutral-800/50",
-      className
-    )}
-    {...props} />
-))
-TableFooter.displayName = "TableFooter"
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
-const TableRow = React.forwardRef(({ className, ...props }, ref) => (
-  <tr
-    ref={ref}
-    className={cn(
-      "border-b transition-colors hover:bg-neutral-100/50 data-[state=selected]:bg-neutral-100 dark:hover:bg-neutral-800/50 dark:data-[state=selected]:bg-neutral-800",
-      className
-    )}
-    {...props} />
-))
-TableRow.displayName = "TableRow"
+export default function Home() {
+  const [csv, setCsv] = useState("");
 
-const TableHead = React.forwardRef(({ className, ...props }, ref) => (
-  <th
-    ref={ref}
-    className={cn(
-      "h-12 px-4 text-left align-middle font-medium text-neutral-500 [&:has([role=checkbox])]:pr-0 dark:text-neutral-400",
-      className
-    )}
-    {...props} />
-))
-TableHead.displayName = "TableHead"
+  const handleUpload = async (file) => {
+    const arrayBuffer = await file.arrayBuffer();
 
-const TableCell = React.forwardRef(({ className, ...props }, ref) => (
-  <td
-    ref={ref}
-    className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0", className)}
-    {...props} />
-))
-TableCell.displayName = "TableCell"
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
-const TableCaption = React.forwardRef(({ className, ...props }, ref) => (
-  <caption
-    ref={ref}
-    className={cn("mt-4 text-sm text-neutral-500 dark:text-neutral-400", className)}
-    {...props} />
-))
-TableCaption.displayName = "TableCaption"
+    let fullText = "";
 
-export {
-  Table,
-  TableHeader,
-  TableBody,
-  TableFooter,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableCaption,
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+
+      const pageText = content.items.map((item) => item.str).join(" ");
+
+      fullText += pageText + "\n";
+    }
+
+    // ✅ DEBUG LOG — RAW PDF TEXT
+    console.log("📘 RAW PDF TEXT:");
+    console.log(fullText);
+
+    // ================================
+    // 3️⃣ Convert text → rows
+    // ================================
+
+    const lines = fullText
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+
+    const rows = [];
+
+    for (const line of lines) {
+      // example: сал.1 Салата Гръцка голяма 250гр €3,22
+      const match = line.match(/(€\s?\d+,\d+)/);
+
+      if (match) {
+        const price = match[1];
+        const name = line.replace(price, "").trim();
+
+        rows.push([name, price.replace("€", "").trim()]);
+
+        // ✅ DEBUG EACH ITEM
+        console.log("🧾 PARSED ROW:", { name, price });
+      }
+    }
+
+    // ================================
+    // 4️⃣ Convert to CSV
+    // ================================
+
+    const csvContent = [["Item", "Price"], ...rows]
+      .map((r) => r.join(","))
+      .join("\n");
+
+    console.log("📊 FINAL CSV:\n", csvContent);
+
+    setCsv(csvContent);
+  };
+
+  return (
+    <main style={{ padding: 40 }}>
+      <h1>PDF → CSV Menu Parser</h1>
+
+      <input
+        type="file"
+        accept="application/pdf"
+        onChange={(e) => {
+          if (e.target.files && e.target.files[0]) {
+            handleUpload(e.target.files[0]);
+          }
+        }}
+      />
+
+      <pre style={{ marginTop: 20, whiteSpace: "pre-wrap" }}>{csv}</pre>
+    </main>
+  );
 }
+
+// ================================
+// ✅ DEBUG OUTPUT
+// ================================
+// • RAW extracted PDF text
+// • Each parsed menu row
+// • Final CSV string
+
+// ================================
+// ✅ CSV OUTPUT EXAMPLE
+// ================================
+// Item,Price
+// сал.1 Салата Гръцка голяма 250гр,3,22
+// супа 1 Супа топчета 300гр,2,97
+// десерт 2 Мляко с ориз 180 гр,1,94

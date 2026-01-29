@@ -2,12 +2,13 @@
 import { useState, useEffect } from "react";
 import { axiosInstance } from "@/lib/axios";
 import Loader from "@/components/layout/Loader";
-import Navbar from "@/components/layout/Navbar";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -19,6 +20,9 @@ export default function Home() {
             },
           });
           setUser(response.data);
+          if (response.data) {
+            router.push("/dashboard");
+          }
         } catch (error) {
           setError("Error fetching user profile");
           console.error(error);
@@ -28,6 +32,7 @@ export default function Home() {
       } else {
         setLoading(false);
         setUser(null);
+        router.push("/sign-in");
       }
     };
 
@@ -38,9 +43,5 @@ export default function Home() {
 
   if (error) return <div>Error: {error}</div>;
 
-  return (
-    <>
-      <Navbar />
-    </>
-  );
+  return;
 }

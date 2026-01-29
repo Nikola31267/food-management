@@ -12,7 +12,7 @@ const AdminPage = () => {
   const [menus, setMenus] = useState([]);
 
   const [menu, setMenu] = useState({
-    day: "Monday",
+    day: "Понеделник",
     meals: [],
   });
 
@@ -44,13 +44,11 @@ const AdminPage = () => {
     init();
   }, [router]);
 
-  // ---------- FETCH MENUS ----------
   const fetchMenus = async () => {
     const res = await axiosInstance.get("/menu");
     setMenus(res.data);
   };
 
-  // ---------- DELETE MEAL ----------
   const deleteMeal = async (day, mealId) => {
     try {
       await axiosInstance.delete(`/menu/${day}/${mealId}`, {
@@ -71,7 +69,6 @@ const AdminPage = () => {
     }
   };
 
-  // ---------- ADD MEAL ----------
   const addMeal = () => {
     setMenu((prev) => ({
       ...prev,
@@ -120,15 +117,7 @@ const AdminPage = () => {
           value={menu.day}
           onChange={(e) => setMenu({ ...menu, day: e.target.value })}
         >
-          {[
-            "Monday",
-            "Tuesday",
-            "Wednesday",
-            "Thursday",
-            "Friday",
-            "Saturday",
-            "Sunday",
-          ].map((d) => (
+          {["Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък"].map((d) => (
             <option key={d}>{d}</option>
           ))}
         </select>

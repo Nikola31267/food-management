@@ -56,12 +56,9 @@ router.delete("/orders/:userId/:orderId", verifyToken, async (req, res) => {
     }
 
     const { userId, orderId } = req.params;
-
-    // Find the user whose order we want to delete
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Remove the order from the user's orders array
     user.orders = user.orders.filter((o) => o._id.toString() !== orderId);
     await user.save();
 

@@ -17,7 +17,7 @@ const mealSchema = new mongoose.Schema({
 const dayOrderSchema = new mongoose.Schema({
   day: {
     type: String,
-    enum: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+    enum: ["Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък"],
     required: true,
   },
   meals: [mealSchema],

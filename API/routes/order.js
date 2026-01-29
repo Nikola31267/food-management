@@ -21,13 +21,27 @@ router.post("/", verifyToken, async (req, res) => {
         .json({ error: "User has already submitted an order" });
     }
 
+    // ✅ weekday order map
+    const dayOrder = {
+      Понеделник: 1,
+      Вторник: 2,
+      Сряда: 3,
+      Четвъртък: 4,
+      Петък: 5,
+    };
+
     const weeklyOrderObj = {
       days: [],
-      totalPrice: totalPrice,
+      totalPrice,
       paid: false,
     };
 
-    for (const day in weeklyOrder) {
+    // ✅ convert object → sorted weekday array
+    const orderedDays = Object.keys(weeklyOrder).sort(
+      (a, b) => dayOrder[a] - dayOrder[b],
+    );
+
+    for (const day of orderedDays) {
       const dayMeals = weeklyOrder[day].map((m) => ({
         mealName: m.name,
         quantity: m.quantity,
@@ -43,7 +57,10 @@ router.post("/", verifyToken, async (req, res) => {
     user.orders.push(weeklyOrderObj);
     await user.save();
 
-    res.status(200).json({ message: "Order saved", totalPrice });
+    res.status(200).json({
+      message: "Order saved successfully",
+      totalPrice,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to save order" });

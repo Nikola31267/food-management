@@ -1,12 +1,9 @@
 import express from "express";
 import User from "../models/User.js";
-const router = express.Router();
-import { verifyToken } from "../middleware/auth.js";
-import axios from "axios";
-import dotenv from "dotenv";
 import DailyMenu from "../models/Menu.js";
+import { verifyToken } from "../middleware/auth.js";
 
-dotenv.config();
+const router = express.Router();
 
 router.post("/", verifyToken, async (req, res) => {
   try {
@@ -21,13 +18,14 @@ router.post("/", verifyToken, async (req, res) => {
     const { day, meals } = req.body;
 
     const menu = await DailyMenu.findOneAndUpdate(
-      { day }, // find Monday
+      { day },
       {
         $push: { meals: { $each: meals } },
       },
       {
         new: true,
         upsert: true,
+        runValidators: true,
       },
     );
 
@@ -39,7 +37,7 @@ router.post("/", verifyToken, async (req, res) => {
 
 router.get("/", async (req, res) => {
   try {
-    const menus = await DailyMenu.find().sort({ day: 1 });
+    const menus = await DailyMenu.find().sort({ dayIndex: 1 });
     res.json(menus);
   } catch (err) {
     res.status(500).json({ message: err.message });
