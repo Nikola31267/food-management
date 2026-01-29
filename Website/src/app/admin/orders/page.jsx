@@ -63,7 +63,7 @@ const AdminOrdersPage = () => {
       });
     });
     const rows = [];
-    rows.push(["Class", "Meal", "Total Quantity"]);
+    rows.push(["Клас", "Ястие", "Бройка"]);
 
     Object.entries(classFoodMap).forEach(([grade, meals]) => {
       Object.entries(meals).forEach(([mealName, quantity]) => {
