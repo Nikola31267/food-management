@@ -7,18 +7,24 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
+const DAYS = ["Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък"];
+
 const AdminPage = () => {
   const [loading, setLoading] = useState(true);
-  const [menus, setMenus] = useState([]);
+  const [weeklyMenu, setWeeklyMenu] = useState(null);
 
-  const [menu, setMenu] = useState({
-    day: "Понеделник",
-    meals: [],
+  const [form, setForm] = useState({
+    weekStart: "",
+    weekEnd: "",
+    days: DAYS.map((d) => ({
+      day: d,
+      meals: [],
+    })),
   });
 
   const router = useRouter();
 
-  // ---------- AUTH ----------
+  // ================= AUTH =================
   useEffect(() => {
     const init = async () => {
       try {
@@ -34,154 +40,203 @@ const AdminPage = () => {
           return;
         }
 
-        await fetchMenus();
+        await fetchMenu();
+      } finally {
         setLoading(false);
-      } catch {
-        router.push("/sign-in");
       }
     };
 
     init();
   }, [router]);
 
-  const fetchMenus = async () => {
+  // ================= FETCH MENU =================
+  const fetchMenu = async () => {
     const res = await axiosInstance.get("/menu");
-    setMenus(res.data);
-  };
 
-  const deleteMeal = async (day, mealId) => {
-    try {
-      await axiosInstance.delete(`/menu/${day}/${mealId}`, {
-        headers: {
-          "x-auth-token": localStorage.getItem("data-traffic-auth"),
-        },
-      });
-
-      setMenus((prev) =>
-        prev.map((d) =>
-          d.day === day
-            ? { ...d, meals: d.meals.filter((m) => m._id !== mealId) }
-            : d,
-        ),
-      );
-    } catch {
-      alert("Failed to delete meal");
+    if (res.data?.days) {
+      setWeeklyMenu(res.data);
+    } else {
+      setWeeklyMenu(null);
     }
   };
 
-  const addMeal = () => {
-    setMenu((prev) => ({
-      ...prev,
-      meals: [...prev.meals, { name: "", price: "" }],
-    }));
+  // ================= ADD MEAL =================
+  const addMeal = (dayIndex) => {
+    const copy = [...form.days];
+    copy[dayIndex].meals.push({ name: "", price: "" });
+    setForm({ ...form, days: copy });
   };
 
-  const handleMealChange = (index, field, value) => {
-    const copy = [...menu.meals];
-    copy[index][field] = value;
-    setMenu({ ...menu, meals: copy });
+  // ================= CHANGE MEAL =================
+  const handleMealChange = (dayIndex, mealIndex, field, value) => {
+    const copy = [...form.days];
+    copy[dayIndex].meals[mealIndex][field] = value;
+    setForm({ ...form, days: copy });
   };
 
+  // ================= SAVE MENU =================
   const handleSubmit = async () => {
     try {
-      await axiosInstance.post("/menu", menu, {
+      await axiosInstance.post("/menu", form, {
         headers: {
           "x-auth-token": localStorage.getItem("data-traffic-auth"),
         },
       });
 
-      alert("Menu saved ✅");
-      setMenu({ day: "Monday", meals: [] });
-      fetchMenus();
+      alert("Weekly menu saved ✅");
+      await fetchMenu();
     } catch {
       alert("Failed to save menu");
     }
   };
 
+  // ================= DELETE WHOLE MENU =================
+  const deleteMenu = async () => {
+    if (!confirm("Delete entire weekly menu?")) return;
+
+    await axiosInstance.delete(`/menu/${weeklyMenu._id}`, {
+      headers: {
+        "x-auth-token": localStorage.getItem("data-traffic-auth"),
+      },
+    });
+
+    setWeeklyMenu(null);
+  };
+
+  // ================= DELETE SINGLE MEAL =================
+  const deleteMeal = async (day, mealId) => {
+    await axiosInstance.delete(`/menu/${weeklyMenu._id}/${day}/${mealId}`, {
+      headers: {
+        "x-auth-token": localStorage.getItem("data-traffic-auth"),
+      },
+    });
+
+    fetchMenu();
+  };
+
   if (loading) return <Loader />;
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-12">
-      <h1 className="text-3xl font-bold">Admin Menu Management</h1>
+    <div className="p-6 max-w-4xl mx-auto space-y-12">
+      <h1 className="text-3xl font-bold">Admin Weekly Menu</h1>
 
       <Link href="/admin/orders" className="text-blue-600 underline">
         View Orders
       </Link>
 
-      {/* ================= ADD MENU ================= */}
-      <div className="border rounded-lg p-6 space-y-4">
-        <h2 className="text-xl font-semibold">Add New Menu</h2>
+      {/* ================= CREATE MENU ================= */}
+      <div className="border rounded-lg p-6 space-y-6">
+        <h2 className="text-xl font-semibold">Create Weekly Menu</h2>
 
-        <select
-          className="border p-2 w-full"
-          value={menu.day}
-          onChange={(e) => setMenu({ ...menu, day: e.target.value })}
-        >
-          {["Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък"].map((d) => (
-            <option key={d}>{d}</option>
-          ))}
-        </select>
+        <div className="grid grid-cols-2 gap-4">
+          <input
+            type="date"
+            className="border p-2"
+            value={form.weekStart}
+            onChange={(e) => setForm({ ...form, weekStart: e.target.value })}
+          />
 
-        {menu.meals.map((meal, index) => (
-          <div key={index} className="border p-3 rounded space-y-2">
-            <input
-              className="border p-2 w-full"
-              placeholder="Meal name"
-              value={meal.name}
-              onChange={(e) => handleMealChange(index, "name", e.target.value)}
-            />
+          <input
+            type="date"
+            className="border p-2"
+            value={form.weekEnd}
+            onChange={(e) => setForm({ ...form, weekEnd: e.target.value })}
+          />
+        </div>
 
-            <input
-              className="border p-2 w-full"
-              type="number"
-              placeholder="Price"
-              value={meal.price}
-              onChange={(e) => handleMealChange(index, "price", e.target.value)}
-            />
+        {form.days.map((day, dayIndex) => (
+          <div key={day.day} className="border rounded-lg p-4 space-y-3">
+            <h3 className="font-bold text-lg">{day.day}</h3>
+
+            {day.meals.map((meal, mealIndex) => (
+              <div key={mealIndex} className="border p-3 rounded space-y-2">
+                <input
+                  className="border p-2 w-full"
+                  placeholder="Meal name"
+                  value={meal.name}
+                  onChange={(e) =>
+                    handleMealChange(
+                      dayIndex,
+                      mealIndex,
+                      "name",
+                      e.target.value,
+                    )
+                  }
+                />
+
+                <input
+                  className="border p-2 w-full"
+                  type="number"
+                  placeholder="Price"
+                  value={meal.price}
+                  onChange={(e) =>
+                    handleMealChange(
+                      dayIndex,
+                      mealIndex,
+                      "price",
+                      e.target.value,
+                    )
+                  }
+                />
+              </div>
+            ))}
+
+            <Button variant="outline" onClick={() => addMeal(dayIndex)}>
+              + Add Meal
+            </Button>
           </div>
         ))}
 
-        <Button variant="outline" onClick={addMeal}>
-          + Add Meal
-        </Button>
-
-        <Button onClick={handleSubmit}>Save Menu</Button>
+        <Button onClick={handleSubmit}>Save Weekly Menu</Button>
       </div>
 
-      {/* ================= CURRENT MENUS ================= */}
-      <div className="space-y-6">
-        <h2 className="text-xl font-semibold">Current Menus</h2>
+      {/* ================= CURRENT MENU ================= */}
+      {weeklyMenu?.days?.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Current Weekly Menu</h2>
 
-        {menus.map((day) => (
-          <div key={day._id} className="border rounded-lg p-4">
-            <h3 className="font-bold text-lg mb-2">{day.day}</h3>
+            <Button variant="destructive" onClick={deleteMenu}>
+              Delete Weekly Menu
+            </Button>
+          </div>
 
-            {day.meals.length === 0 ? (
-              <p className="text-gray-500">No meals</p>
-            ) : (
-              <ul className="space-y-2">
-                {day.meals.map((meal) => (
-                  <li
-                    key={meal._id}
-                    className="flex justify-between items-center"
-                  >
-                    <span>
-                      {meal.name} — ${meal.price}
-                    </span>
+          <p className="text-gray-600">
+            {new Date(weeklyMenu.weekStart).toLocaleDateString()} –{" "}
+            {new Date(weeklyMenu.weekEnd).toLocaleDateString()}
+          </p>
 
-                    <button
-                      onClick={() => deleteMeal(day.day, meal._id)}
-                      className="text-red-600 hover:text-red-800"
+          {weeklyMenu.days.map((day) => (
+            <div key={day.day} className="border rounded p-4">
+              <h3 className="font-bold">{day.day}</h3>
+
+              {day.meals.length === 0 ? (
+                <p className="text-gray-500">No meals</p>
+              ) : (
+                <ul className="space-y-1">
+                  {day.meals.map((meal) => (
+                    <li
+                      key={meal._id}
+                      className="flex justify-between items-center"
                     >
-                      ❌
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ))}
-      </div>
+                      <span>
+                        {meal.name} — ${meal.price}
+                      </span>
+
+                      <button
+                        className="text-red-600 hover:text-red-800"
+                        onClick={() => deleteMeal(day.day, meal._id)}
+                      >
+                        ❌
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

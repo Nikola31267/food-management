@@ -5,43 +5,34 @@ const mealSchema = new mongoose.Schema({
   price: Number,
 });
 
-const dayOrder = {
-  Понеделник: 1,
-  Вторник: 2,
-  Сряда: 3,
-  Четвъртък: 4,
-  Петък: 5,
-};
+const daySchema = new mongoose.Schema({
+  day: {
+    type: String,
+    enum: ["Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък"],
+    required: true,
+  },
+  meals: {
+    type: [mealSchema],
+    default: [],
+  },
+});
 
-const dailyMenuSchema = new mongoose.Schema(
+const weeklyMenuSchema = new mongoose.Schema(
   {
-    day: {
-      type: String,
-      required: true,
-      enum: ["Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък"],
-    },
-
-    dayIndex: {
-      type: Number,
+    weekStart: {
+      type: Date,
       required: true,
     },
-
-    meals: {
-      type: [mealSchema],
+    weekEnd: {
+      type: Date,
+      required: true,
+    },
+    days: {
+      type: [daySchema],
       default: [],
     },
   },
   { timestamps: true },
 );
 
-//
-// 🔥 Automatically set correct day order
-//
-dailyMenuSchema.pre("validate", function (next) {
-  this.dayIndex = dayOrder[this.day];
-  next();
-});
-
-const DailyMenu = mongoose.model("DailyMenu", dailyMenuSchema);
-
-export default DailyMenu;
+export default mongoose.model("WeeklyMenu", weeklyMenuSchema);

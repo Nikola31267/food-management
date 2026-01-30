@@ -13,58 +13,54 @@ const Dashboard = () => {
   const [hasOrdered, setHasOrdered] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [menus, setMenus] = useState([]);
+
+  const [menu, setMenu] = useState(null);
   const [weeklyOrder, setWeeklyOrder] = useState({});
   const [savedOrder, setSavedOrder] = useState(null);
+
   const router = useRouter();
 
   const totalPrice = Object.values(weeklyOrder)
     .flat()
     .reduce((sum, meal) => sum + meal.price * meal.quantity, 0);
 
+  // ================= AUTH =================
   useEffect(() => {
-    const checkAuthAndAccess = async () => {
-      if (!localStorage.getItem("data-traffic-auth")) {
-        router.push("/sign-in");
-        return;
-      }
-
+    const init = async () => {
       try {
-        const response = await axiosInstance.get("/auth/user", {
-          headers: {
-            "x-auth-token": localStorage.getItem("data-traffic-auth"),
-          },
+        const token = localStorage.getItem("data-traffic-auth");
+        if (!token) return router.push("/sign-in");
+
+        const userRes = await axiosInstance.get("/auth/user", {
+          headers: { "x-auth-token": token },
         });
-        setUser(response.data);
 
-        if (response.data.orders && response.data.orders.length > 0) {
+        setUser(userRes.data);
+
+        if (userRes.data.orders?.length > 0) {
           setHasOrdered(true);
-          setSavedOrder(response.data.orders[0]);
+          setSavedOrder(userRes.data.orders[0]);
         }
 
-        if (!response.data.grade) {
-          router.push("/grade");
-        }
-
-        setLoading(false);
-      } catch (error) {
-        setError("Failed to fetch user data");
+        if (!userRes.data.grade) router.push("/grade");
+      } catch {
         router.push("/sign-in");
+      } finally {
+        setLoading(false);
       }
     };
 
-    checkAuthAndAccess();
+    init();
   }, [router]);
 
+  // ================= MENU =================
   useEffect(() => {
     const fetchMenu = async () => {
       try {
         const res = await axiosInstance.get("/menu");
-        setMenus(res.data);
+        setMenu(res.data);
       } catch (err) {
         console.error(err);
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -76,33 +72,35 @@ const Dashboard = () => {
     window.location.href = "/sign-in";
   };
 
+  // ================= ORDER LOGIC =================
   const addMealToOrder = (day, meal) => {
     if (hasOrdered) return;
+
     setWeeklyOrder((prev) => {
       const dayMeals = prev[day] || [];
-      const existingMeal = dayMeals.find((m) => m.mealId === meal._id);
+      const existing = dayMeals.find((m) => m.mealId === meal._id);
 
-      if (existingMeal) {
+      if (existing) {
         return {
           ...prev,
           [day]: dayMeals.map((m) =>
             m.mealId === meal._id ? { ...m, quantity: m.quantity + 1 } : m,
           ),
         };
-      } else {
-        return {
-          ...prev,
-          [day]: [
-            ...dayMeals,
-            {
-              mealId: meal._id,
-              name: meal.name,
-              price: meal.price,
-              quantity: 1,
-            },
-          ],
-        };
       }
+
+      return {
+        ...prev,
+        [day]: [
+          ...dayMeals,
+          {
+            mealId: meal._id,
+            name: meal.name,
+            price: meal.price,
+            quantity: 1,
+          },
+        ],
+      };
     });
   };
 
@@ -117,44 +115,40 @@ const Dashboard = () => {
 
   const decreaseQuantity = (day, mealId) => {
     setWeeklyOrder((prev) => {
-      const updatedMeals = prev[day]
+      const updated = prev[day]
         .map((m) =>
           m.mealId === mealId ? { ...m, quantity: m.quantity - 1 } : m,
         )
         .filter((m) => m.quantity > 0);
 
-      if (updatedMeals.length === 0) {
+      if (updated.length === 0) {
         const copy = { ...prev };
         delete copy[day];
         return copy;
       }
 
-      return {
-        ...prev,
-        [day]: updatedMeals,
-      };
+      return { ...prev, [day]: updated };
     });
   };
 
   const removeMeal = (day, mealId) => {
     setWeeklyOrder((prev) => {
-      const updatedMeals = prev[day].filter((m) => m.mealId !== mealId);
+      const updated = prev[day].filter((m) => m.mealId !== mealId);
 
-      if (updatedMeals.length === 0) {
+      if (updated.length === 0) {
         const copy = { ...prev };
         delete copy[day];
         return copy;
       }
 
-      return {
-        ...prev,
-        [day]: updatedMeals,
-      };
+      return { ...prev, [day]: updated };
     });
   };
 
+  // ================= SUBMIT =================
   const submitWeeklyOrder = async () => {
     if (hasOrdered) return;
+
     try {
       await axiosInstance.post(
         "/order",
@@ -165,22 +159,11 @@ const Dashboard = () => {
           },
         },
       );
-      alert(`Order submitted successfully! Total: $${totalPrice}`);
-      setSavedOrder({
-        days: Object.keys(weeklyOrder).map((day) => ({
-          day,
-          meals: weeklyOrder[day].map((m) => ({
-            mealName: m.name,
-            quantity: m.quantity,
-            price: m.price,
-          })),
-        })),
-        totalPrice,
-      });
-      setWeeklyOrder({});
+
+      alert("Order submitted ✅");
       setHasOrdered(true);
-    } catch (err) {
-      console.error(err);
+      setWeeklyOrder({});
+    } catch {
       alert("Failed to submit order");
     }
   };
@@ -189,103 +172,48 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
-      <div className="flex justify-between items-center border-b border-gray-200 mb-12">
-        <div className="flex items-center">
-          <Link href="/dashboard">
-            <Image
-              src="/logo-nobg.png"
-              alt="Logo"
-              className="h-12 w-12 mr-2"
-              width={48}
-              height={48}
-            />
-          </Link>
-        </div>
-        <div className="flex items-center">
-          {user?.role === "admin" && (
-            <Link
-              className="block w-full text-left text-sm text-gray-700 bg-transparent border-none cursor-pointer transition-colors hover:bg-gray-100"
-              href="/admin"
-            >
-              Admin
-            </Link>
-          )}
-          <Button
-            onClick={handleLogout}
-            className="block w-full text-left text-sm text-gray-700 bg-transparent border-none cursor-pointer transition-colors hover:bg-gray-100"
-          >
-            Sign out
-          </Button>
+      {/* HEADER */}
+      <div className="flex justify-between items-center border-b mb-10">
+        <Link href="/dashboard">
+          <Image src="/logo-nobg.png" alt="Logo" width={48} height={48} />
+        </Link>
+
+        <div className="flex gap-4">
+          {user?.role === "admin" && <Link href="/admin">Admin</Link>}
+          <Button onClick={handleLogout}>Sign out</Button>
         </div>
       </div>
 
-      {error && <p className="text-red-500 mb-4">{error}</p>}
+      <h1 className="text-3xl font-bold text-center mb-4">Weekly Menu</h1>
 
-      <h1 className="text-3xl font-bold text-center mb-6">Weekly Menu</h1>
+      {menu && (
+        <p className="text-center text-gray-600 mb-8">
+          {new Date(menu.weekStart).toLocaleDateString()} –{" "}
+          {new Date(menu.weekEnd).toLocaleDateString()}
+        </p>
+      )}
 
-      {hasOrdered && savedOrder ? (
-        <div className="bg-green-50 border rounded-lg p-6">
-          <h2 className="text-2xl font-bold mb-4 text-center">
-            Your Weekly Order
-          </h2>
+      {/* ================= MENU ================= */}
+      {!hasOrdered &&
+        menu?.days.map((day) => (
+          <div key={day.day} className="border rounded mb-6">
+            <h2 className="bg-gray-100 p-3 font-semibold text-lg">{day.day}</h2>
 
-          {savedOrder.days.map((day) => (
-            <div key={day.day} className="mb-4">
-              <h3 className="font-semibold text-lg">{day.day}</h3>
-
-              <ul className="ml-4 list-disc">
-                {day.meals.map((meal, index) => (
-                  <li key={index}>
-                    {meal.mealName} × {meal.quantity} = $
-                    {meal.price * meal.quantity}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-
-          <div className="mt-6 text-xl font-bold text-center">
-            Final Total: ${savedOrder.totalPrice}
-          </div>
-        </div>
-      ) : (
-        menus.map((dayMenu) => (
-          <div
-            key={dayMenu._id}
-            className="border rounded-lg overflow-hidden mb-6"
-          >
-            <h2 className="bg-gray-100 p-3 text-xl font-semibold">
-              {dayMenu.day}
-            </h2>
-
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-gray-50 border-b">
-                  <th className="p-2 text-left">Meal</th>
-                  <th className="p-2 text-left">Price</th>
-                  <th className="p-2 text-center">Add</th>
-                </tr>
-              </thead>
+            <table className="w-full">
               <tbody>
-                {dayMenu.meals.length === 0 ? (
+                {day.meals.length === 0 ? (
                   <tr>
-                    <td colSpan="3" className="p-3 text-center text-gray-500">
-                      No meals added
-                    </td>
+                    <td className="p-4 text-center text-gray-500">No meals</td>
                   </tr>
                 ) : (
-                  dayMenu.meals.map((meal) => (
-                    <tr key={meal._id} className="border-b">
+                  day.meals.map((meal) => (
+                    <tr key={meal._id} className="border-t">
                       <td className="p-2">{meal.name}</td>
                       <td className="p-2">${meal.price}</td>
                       <td className="p-2 text-center">
                         <button
-                          onClick={() => addMealToOrder(dayMenu.day, meal)}
-                          className={`text-green-600 hover:text-green-800 text-lg ${
-                            hasOrdered ? "cursor-not-allowed opacity-50" : ""
-                          }`}
-                          title={hasOrdered ? "Already ordered" : "Add meal"}
                           disabled={hasOrdered}
+                          onClick={() => addMealToOrder(day.day, meal)}
                         >
                           ➕
                         </button>
@@ -296,69 +224,36 @@ const Dashboard = () => {
               </tbody>
             </table>
 
-            {/* Selected meals for this day */}
-            {weeklyOrder[dayMenu.day] &&
-              weeklyOrder[dayMenu.day].length > 0 && (
-                <div className="p-3 bg-gray-50">
-                  <h3 className="font-semibold mb-2">Selected:</h3>
-                  <ul>
-                    {weeklyOrder[dayMenu.day].map((meal) => (
-                      <li
-                        key={meal.mealId}
-                        className="flex items-center gap-3 mb-2"
-                      >
-                        <span className="w-32">{meal.name}</span>
-
-                        <button
-                          onClick={() =>
-                            decreaseQuantity(dayMenu.day, meal.mealId)
-                          }
-                          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
-                        >
-                          ➖
-                        </button>
-
-                        <span className="font-semibold w-6 text-center">
-                          {meal.quantity}
-                        </span>
-
-                        <button
-                          onClick={() =>
-                            increaseQuantity(dayMenu.day, meal.mealId)
-                          }
-                          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
-                        >
-                          ➕
-                        </button>
-
-                        <button
-                          onClick={() => removeMeal(dayMenu.day, meal.mealId)}
-                          className="ml-2 text-red-600 hover:text-red-800"
-                          title="Remove"
-                        >
-                          ❌
-                        </button>
-
-                        <span className="ml-auto font-semibold">
-                          ${meal.price * meal.quantity}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+            {weeklyOrder[day.day] && (
+              <div className="p-3 bg-gray-50">
+                {weeklyOrder[day.day].map((meal) => (
+                  <div key={meal.mealId} className="flex gap-3 mb-2">
+                    <span>{meal.name}</span>
+                    <button
+                      onClick={() => decreaseQuantity(day.day, meal.mealId)}
+                    >
+                      ➖
+                    </button>
+                    <span>{meal.quantity}</span>
+                    <button
+                      onClick={() => increaseQuantity(day.day, meal.mealId)}
+                    >
+                      ➕
+                    </button>
+                    <span className="ml-auto">
+                      ${meal.price * meal.quantity}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        ))
-      )}
+        ))}
+
       {!hasOrdered && (
-        <div className="flex justify-center items-center mt-6 space-x-4">
-          <p className="text-xl font-bold">Final Total: ${totalPrice}</p>
-          <Button
-            onClick={submitWeeklyOrder}
-            className="bg-blue-600 text-white hover:bg-blue-700"
-          >
-            Submit Weekly Order
-          </Button>
+        <div className="flex justify-center gap-6 mt-8">
+          <p className="text-xl font-bold">Total: ${totalPrice}</p>
+          <Button onClick={submitWeeklyOrder}>Submit Weekly Order</Button>
         </div>
       )}
     </div>

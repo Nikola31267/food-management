@@ -1,50 +1,45 @@
 import express from "express";
 import User from "../models/User.js";
-import DailyMenu from "../models/Menu.js";
+import WeeklyMenu from "../models/Menu.js";
 import { verifyToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
+// ================= CREATE / UPDATE WEEK =================
 router.post("/", verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
 
     if (user.role !== "admin") {
-      return res.status(403).json({
-        message: "You are not admin",
-      });
+      return res.status(403).json({ message: "You are not admin" });
     }
 
-    const { day, meals } = req.body;
+    const { weekStart, weekEnd, days } = req.body;
 
-    const menu = await DailyMenu.findOneAndUpdate(
-      { day },
-      {
-        $push: { meals: { $each: meals } },
-      },
-      {
-        new: true,
-        upsert: true,
-        runValidators: true,
-      },
+    const menu = await WeeklyMenu.findOneAndUpdate(
+      { weekStart, weekEnd },
+      { weekStart, weekEnd, days },
+      { new: true, upsert: true },
     );
 
-    res.status(200).json(menu);
+    res.json(menu);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
+// ================= GET CURRENT WEEK =================
 router.get("/", async (req, res) => {
   try {
-    const menus = await DailyMenu.find().sort({ dayIndex: 1 });
-    res.json(menus);
+    const menu = await WeeklyMenu.findOne().sort({ createdAt: -1 });
+    res.json(menu);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-router.delete("/:day/:mealId", verifyToken, async (req, res) => {
+// ================= DELETE SINGLE MEAL =================
+router.delete("/:menuId/:day/:mealId", verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
 
@@ -52,19 +47,39 @@ router.delete("/:day/:mealId", verifyToken, async (req, res) => {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    const { day, mealId } = req.params;
+    const { menuId, day, mealId } = req.params;
 
-    const menu = await DailyMenu.findOneAndUpdate(
-      { day },
+    const menu = await WeeklyMenu.findByIdAndUpdate(
+      menuId,
       {
         $pull: {
-          meals: { _id: mealId },
+          "days.$[d].meals": { _id: mealId },
         },
       },
-      { new: true },
+      {
+        arrayFilters: [{ "d.day": day }],
+        new: true,
+      },
     );
 
     res.json(menu);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ================= DELETE WHOLE MENU =================
+router.delete("/:menuId", verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    await WeeklyMenu.findByIdAndDelete(req.params.menuId);
+
+    res.json({ message: "Weekly menu deleted" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
