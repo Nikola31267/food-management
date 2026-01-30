@@ -253,7 +253,7 @@ const Dashboard = () => {
       {!hasOrdered && (
         <div className="flex justify-center gap-6 mt-8">
           <p className="text-xl font-bold">Total: ${totalPrice}</p>
-          <Button onClick={submitWeeklyOrder}>Submit Weekly Order</Button>
+          <Button onClick={submitWeeklyOrder}>Submit Weekl Order</Button>
         </div>
       )}
     </div>
