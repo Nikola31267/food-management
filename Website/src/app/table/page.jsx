@@ -33,7 +33,7 @@ export default function Page() {
 
   return (
     <div style={{ padding: 30 }}>
-      <h2>Upload menu PDF</h2>
+      <h2>Upload menu</h2>
       <input type="file" accept="application/pdf" onChange={handleFile} />
       <table style={{ marginTop: 20, borderCollapse: "collapse" }}>
         <tbody>
