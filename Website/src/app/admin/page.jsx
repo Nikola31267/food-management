@@ -24,7 +24,6 @@ const AdminPage = () => {
 
   const router = useRouter();
 
-  // ================= AUTH =================
   useEffect(() => {
     const init = async () => {
       try {
@@ -49,7 +48,6 @@ const AdminPage = () => {
     init();
   }, [router]);
 
-  // ================= FETCH MENU =================
   const fetchMenu = async () => {
     const res = await axiosInstance.get("/menu");
 
@@ -60,21 +58,18 @@ const AdminPage = () => {
     }
   };
 
-  // ================= ADD MEAL =================
   const addMeal = (dayIndex) => {
     const copy = [...form.days];
     copy[dayIndex].meals.push({ name: "", price: "" });
     setForm({ ...form, days: copy });
   };
 
-  // ================= CHANGE MEAL =================
   const handleMealChange = (dayIndex, mealIndex, field, value) => {
     const copy = [...form.days];
     copy[dayIndex].meals[mealIndex][field] = value;
     setForm({ ...form, days: copy });
   };
 
-  // ================= SAVE MENU =================
   const handleSubmit = async () => {
     try {
       await axiosInstance.post("/menu", form, {
@@ -90,7 +85,6 @@ const AdminPage = () => {
     }
   };
 
-  // ================= DELETE WHOLE MENU =================
   const deleteMenu = async () => {
     if (!confirm("Delete entire weekly menu?")) return;
 
@@ -103,7 +97,6 @@ const AdminPage = () => {
     setWeeklyMenu(null);
   };
 
-  // ================= DELETE SINGLE MEAL =================
   const deleteMeal = async (day, mealId) => {
     await axiosInstance.delete(`/menu/${weeklyMenu._id}/${day}/${mealId}`, {
       headers: {
@@ -124,7 +117,6 @@ const AdminPage = () => {
         View Orders
       </Link>
 
-      {/* ================= CREATE MENU ================= */}
       <div className="border rounded-lg p-6 space-y-6">
         <h2 className="text-xl font-semibold">Create Weekly Menu</h2>
 
@@ -190,7 +182,6 @@ const AdminPage = () => {
         <Button onClick={handleSubmit}>Save Weekly Menu</Button>
       </div>
 
-      {/* ================= CURRENT MENU ================= */}
       {weeklyMenu?.days?.length > 0 && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">

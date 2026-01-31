@@ -1,9 +1,7 @@
 import express from "express";
 import User from "../models/User.js";
 const router = express.Router();
-import jwt from "jsonwebtoken";
 import { verifyToken } from "../middleware/auth.js";
-import axios from "axios";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -21,7 +19,6 @@ router.post("/", verifyToken, async (req, res) => {
         .json({ error: "User has already submitted an order" });
     }
 
-    // ✅ weekday order map
     const dayOrder = {
       Понеделник: 1,
       Вторник: 2,
@@ -36,7 +33,6 @@ router.post("/", verifyToken, async (req, res) => {
       paid: false,
     };
 
-    // ✅ convert object → sorted weekday array
     const orderedDays = Object.keys(weeklyOrder).sort(
       (a, b) => dayOrder[a] - dayOrder[b],
     );
