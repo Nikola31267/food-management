@@ -192,9 +192,14 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="flex justify-between items-center border-b mb-10">
-        <Link href="/dashboard">
-          <Image src="/logo-nobg.png" alt="Logo" width={48} height={48} />
-        </Link>
+        <div className="flex gap-2 items-center">
+          <Link href="/dashboard">
+            <Image src="/logo-nobg.png" alt="Logo" width={48} height={48} />
+          </Link>
+          <h1 className="text-lg font-semibold">
+            {user?.fullName} {user?.grade}
+          </h1>
+        </div>
 
         <div className="flex items-center gap-4">
           {user?.role === "admin" && (

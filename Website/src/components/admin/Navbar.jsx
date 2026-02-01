@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { ShinyButton } from "../ui/shiny-button";
 
-export default function Navbar() {
+export default function Navbar({ user }) {
   return (
     <div className="flex justify-between items-center">
       <motion.header
@@ -14,14 +14,20 @@ export default function Navbar() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Link href="/dashboard" className="flex items-center">
-          <Image
-            src="/logo-nobg.png"
-            alt="TurboVerify"
-            width={60}
-            height={60}
-          />
-        </Link>
+        <div className="flex gap-2 items-center">
+          <Link href="/dashboard" className="flex items-center">
+            <Image
+              src="/logo-nobg.png"
+              alt="TurboVerify"
+              width={48}
+              height={48}
+            />
+          </Link>
+          <h1 className="text-lg font-semibold">
+            {user?.fullName} {user?.grade}
+          </h1>
+        </div>
+
         <div className="flex items-center space-x-4 ">
           <div className="flex items-center gap-4">
             <ShinyButton className="h-10 w-28" href="/admin/orders">

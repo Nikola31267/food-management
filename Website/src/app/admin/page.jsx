@@ -12,7 +12,39 @@ const DAYS = ["Понеделник", "Вторник", "Сряда", "Четв�
 
 const AdminPage = () => {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [user, setUser] = useState("");
   const [weeklyMenu, setWeeklyMenu] = useState(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (localStorage.getItem("data-traffic-auth")) {
+        try {
+          const response = await axiosInstance.get("/auth/user", {
+            headers: {
+              "x-auth-token": localStorage.getItem("data-traffic-auth"),
+            },
+          });
+          if (response.data.role != "admin") {
+            router.push("/dashboard");
+          }
+          setUser(response.data);
+        } catch (error) {
+          setError("Error fetching user profile");
+          console.error(error);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+        setUser(null);
+        router.push("/sign-in");
+      }
+    };
+
+    fetchUserProfile();
+  }, [router]);
 
   const [form, setForm] = useState({
     weekStart: "",
@@ -23,8 +55,6 @@ const AdminPage = () => {
 
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState(null);
-
-  const router = useRouter();
 
   const formatDateForInput = (isoDate) => {
     if (!isoDate) return "";
@@ -222,32 +252,42 @@ const AdminPage = () => {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-12">
-      <Navbar />
+      <Navbar user={user} />
 
+      <h2 className="text-xl font-semibold">Създай седмично меню</h2>
       <div className="border rounded-lg p-6 space-y-6">
-        <h2 className="text-xl font-semibold">Създай седмично меню</h2>
-
         <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1">
+            <h3 className="font-bold">От:</h3>
+            <input
+              type="date"
+              className="border p-2"
+              value={form.weekStart}
+              onChange={(e) => setForm({ ...form, weekStart: e.target.value })}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <h3 className="font-bold">До:</h3>
+            <input
+              type="date"
+              className="border p-2"
+              value={form.weekEnd}
+              onChange={(e) => setForm({ ...form, weekEnd: e.target.value })}
+            />
+          </div>
+        </div>
+        <div className="flex flex-col gap-1">
+          <h3 className="font-bold">Последен ден за поръчка:</h3>
+
           <input
-            type="date"
-            className="border p-2"
-            value={form.weekStart}
-            onChange={(e) => setForm({ ...form, weekStart: e.target.value })}
-          />
-          <input
-            type="date"
-            className="border p-2"
-            value={form.weekEnd}
-            onChange={(e) => setForm({ ...form, weekEnd: e.target.value })}
+            type="datetime-local"
+            className="border p-2 w-full"
+            value={form.orderDeadline}
+            onChange={(e) =>
+              setForm({ ...form, orderDeadline: e.target.value })
+            }
           />
         </div>
-
-        <input
-          type="datetime-local"
-          className="border p-2 w-full"
-          value={form.orderDeadline}
-          onChange={(e) => setForm({ ...form, orderDeadline: e.target.value })}
-        />
 
         {form.days.map((day, dayIndex) => (
           <div key={day.day} className="border p-4 rounded">

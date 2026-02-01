@@ -13,6 +13,7 @@ const AdminOrdersPage = () => {
   const [ordersData, setOrdersData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [user, setUser] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -27,6 +28,7 @@ const AdminOrdersPage = () => {
           if (response.data.role != "admin") {
             router.push("/dashboard");
           }
+          setUser(response.data);
         } catch (error) {
           setError("Error fetching user profile");
           console.error(error);
@@ -151,7 +153,7 @@ const AdminOrdersPage = () => {
 
   return (
     <div className="p-8 min-h-screen bg-gray-100">
-      <Navbar />
+      <Navbar user={user} />
       <h1 className="text-3xl font-bold mb-6">Поръчки</h1>
 
       {ordersData.length !== 0 && (
