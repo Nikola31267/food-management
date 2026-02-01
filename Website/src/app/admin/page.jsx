@@ -16,6 +16,7 @@ const AdminPage = () => {
   const [form, setForm] = useState({
     weekStart: "",
     weekEnd: "",
+    orderDeadline: "", // ⬅️ NEW
     days: DAYS.map((d) => ({
       day: d,
       meals: [],

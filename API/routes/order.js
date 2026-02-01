@@ -4,6 +4,8 @@ const router = express.Router();
 import { verifyToken } from "../middleware/auth.js";
 import dotenv from "dotenv";
 
+import WeeklyMenu from "../models/Menu.js";
+
 dotenv.config();
 
 router.post("/", verifyToken, async (req, res) => {
@@ -18,6 +20,24 @@ router.post("/", verifyToken, async (req, res) => {
         .status(400)
         .json({ error: "User has already submitted an order" });
     }
+
+    // 🔥 GET CURRENT MENU
+    const menu = await WeeklyMenu.findOne().sort({ createdAt: -1 });
+
+    if (!menu) {
+      return res.status(400).json({ error: "No active menu" });
+    }
+
+    // 🔥 DEADLINE CHECK
+    const now = new Date();
+
+    if (now > menu.orderDeadline) {
+      return res.status(403).json({
+        error: "Ordering deadline has passed",
+      });
+    }
+
+    // ---- existing logic ----
 
     const dayOrder = {
       Понеделник: 1,
@@ -44,10 +64,7 @@ router.post("/", verifyToken, async (req, res) => {
         price: m.price,
       }));
 
-      weeklyOrderObj.days.push({
-        day,
-        meals: dayMeals,
-      });
+      weeklyOrderObj.days.push({ day, meals: dayMeals });
     }
 
     user.orders.push(weeklyOrderObj);

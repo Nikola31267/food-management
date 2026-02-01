@@ -148,23 +148,15 @@ const Dashboard = () => {
 
       alert("Order submitted ✅");
       setHasOrdered(true);
-      setSavedOrder({
-        days: Object.keys(weeklyOrder).map((day) => ({
-          day,
-          meals: weeklyOrder[day].map((m) => ({
-            mealName: m.name,
-            quantity: m.quantity,
-            price: m.price,
-          })),
-        })),
-        totalPrice,
-        paid: false,
-      });
       setWeeklyOrder({});
-    } catch {
-      alert("Failed to submit order");
+    } catch (err) {
+      const message = err.response?.data?.error || "Failed to submit order";
+
+      alert(message);
     }
   };
+
+  const hasMenu = menu?.days?.some((day) => day.meals && day.meals.length > 0);
 
   if (loading) return <Loader />;
 
@@ -269,11 +261,15 @@ const Dashboard = () => {
         );
       })}
 
-      {!hasOrdered && (
+      {!hasOrdered && hasMenu ? (
         <div className="flex justify-center gap-6 mt-8">
           <p className="text-xl font-bold">Total: ${totalPrice}</p>
           <Button onClick={submitWeeklyOrder}>Submit Weekly Order</Button>
         </div>
+      ) : (
+        <>
+          <h1>No menu</h1>
+        </>
       )}
 
       {hasOrdered && savedOrder && (
