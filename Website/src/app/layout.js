@@ -12,7 +12,7 @@ const poppins = Poppins({
 
 export const metadata = getSEOTags();
 
-export default function RootLayout({ children, modal }) {
+export default function RootLayout({ children }) {
   return (
     <html lang="en" data-theme="light">
       <body
@@ -20,7 +20,6 @@ export default function RootLayout({ children, modal }) {
         style={{ fontFamily: "var(--font-poppins)" }}
       >
         {children}
-        {modal}
         <Toaster />
       </body>
     </html>

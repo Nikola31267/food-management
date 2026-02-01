@@ -1,5 +1,5 @@
 const config = {
-  appName: "Food Management",
+  appName: "Образователни Технологии",
   domainName: "http://localhost:3000",
   description: "",
   supportEmail: "et.nikola.min@eduiteh.eu",

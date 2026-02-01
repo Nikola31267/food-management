@@ -2,6 +2,7 @@ import express from "express";
 import User from "../models/User.js";
 import WeeklyMenu from "../models/Menu.js";
 import { verifyToken } from "../middleware/auth.js";
+import { Parser } from "json2csv";
 
 const router = express.Router();
 
@@ -119,20 +120,79 @@ router.delete("/:menuId/:day/:mealId", verifyToken, async (req, res) => {
 router.delete("/:menuId", verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-
     if (user.role !== "admin") {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    const menuId = req.params.menuId;
+    const { menuId } = req.params;
+    const download = req.query.download === "true";
 
-    // Delete the menu
+    const usersWithOrders = await User.find(
+      { "orders.menuId": menuId },
+      { fullName: 1, grade: 1, orders: 1 },
+    );
+
+    let csv;
+
+    if (download) {
+      const rows = [];
+
+      usersWithOrders.forEach((user) => {
+        const row = {
+          Name: user.fullName || "—",
+          Grade: user.grade || "—",
+          Понеделник: "—",
+          Вторник: "—",
+          Сряда: "—",
+          Четвъртък: "—",
+          Петък: "—",
+          Total: 0,
+        };
+
+        user.orders
+          .filter((o) => o.menuId.toString() === menuId)
+          .forEach((order) => {
+            row.Total += order.totalPrice || 0;
+
+            order.days.forEach((day) => {
+              const mealsText = day.meals
+                .map((m) => `${m.mealName} x${m.quantity}`)
+                .join(", ");
+
+              row[day.day] = mealsText || "—";
+            });
+          });
+
+        rows.push(row);
+      });
+
+      const parser = new Parser({
+        fields: [
+          "Name",
+          "Grade",
+          "Понеделник",
+          "Вторник",
+          "Сряда",
+          "Четвъртък",
+          "Петък",
+          "Total",
+        ],
+      });
+
+      csv = parser.parse(rows);
+    }
+
     await WeeklyMenu.findByIdAndDelete(menuId);
 
-    // Remove all orders linked to this menu from all users
-    await User.updateMany({}, { $pull: { orders: { menuId: menuId } } });
+    await User.updateMany({}, { $pull: { orders: { menuId } } });
 
-    res.json({ message: "Weekly menu and all related orders deleted" });
+    if (download) {
+      res.header("Content-Type", "text/csv");
+      res.attachment(`orders-${menuId}.csv`);
+      return res.send(csv);
+    }
+
+    res.json({ message: "Weekly menu and orders deleted" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

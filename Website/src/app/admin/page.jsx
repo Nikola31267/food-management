@@ -179,14 +179,40 @@ const AdminPage = () => {
     setEditForm({ ...editForm, days: copy });
   };
 
-  const deleteMenu = async () => {
-    if (!confirm("Delete entire weekly menu?")) return;
+  const formatDate = (date) => new Date(date).toISOString().split("T")[0];
 
-    await axiosInstance.delete(`/menu/${weeklyMenu._id}`, {
-      headers: {
-        "x-auth-token": localStorage.getItem("data-traffic-auth"),
+  const deleteMenu = async () => {
+    const firstConfirm = window.confirm("Delete entire weekly menu?");
+    if (!firstConfirm) return;
+
+    const downloadOrders = window.confirm(
+      "Do you want to download all orders before deleting?",
+    );
+
+    const response = await axiosInstance.delete(
+      `/menu/${weeklyMenu._id}?download=${downloadOrders}`,
+      {
+        headers: {
+          "x-auth-token": localStorage.getItem("data-traffic-auth"),
+        },
+        responseType: downloadOrders ? "blob" : "json",
       },
-    });
+    );
+
+    if (downloadOrders) {
+      const startDate = formatDate(weeklyMenu.weekStart);
+      const endDate = formatDate(weeklyMenu.weekEnd);
+
+      const blob = new Blob([response.data], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `orders-${startDate}_to_${endDate}.csv`;
+      a.click();
+
+      window.URL.revokeObjectURL(url);
+    }
 
     setWeeklyMenu(null);
     setIsEditing(false);
