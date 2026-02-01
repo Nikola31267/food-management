@@ -27,13 +27,10 @@ const weeklyMenuSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
-
-    // ⬇️ NEW
     orderDeadline: {
       type: Date,
       required: true,
     },
-
     days: {
       type: [daySchema],
       default: [],

@@ -5,30 +5,79 @@ import { verifyToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// ================= CREATE / UPDATE WEEK =================
 router.post("/", verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-
     if (user.role !== "admin") {
       return res.status(403).json({ message: "You are not admin" });
     }
 
-    const { weekStart, weekEnd, days } = req.body;
+    const { weekStart, weekEnd, days, orderDeadline } = req.body;
 
-    const menu = await WeeklyMenu.findOneAndUpdate(
-      { weekStart, weekEnd },
-      { weekStart, weekEnd, days },
-      { new: true, upsert: true },
-    );
+    if (!orderDeadline) {
+      return res.status(400).json({ message: "Order deadline is required" });
+    }
 
-    res.json(menu);
+    const deadlineDate = new Date(orderDeadline);
+    if (isNaN(deadlineDate.getTime())) {
+      return res.status(400).json({ message: "Invalid order deadline" });
+    }
+
+    const menu = await WeeklyMenu.create({
+      weekStart,
+      weekEnd,
+      orderDeadline: deadlineDate,
+      days,
+    });
+
+    res.status(201).json(menu);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 });
 
-// ================= GET CURRENT WEEK =================
+router.put("/:menuId", verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    const { weekStart, weekEnd, days, orderDeadline } = req.body;
+
+    if (!orderDeadline) {
+      return res.status(400).json({ message: "Order deadline is required" });
+    }
+
+    const deadlineDate = new Date(orderDeadline);
+    if (isNaN(deadlineDate.getTime())) {
+      return res.status(400).json({ message: "Invalid order deadline" });
+    }
+
+    const updatedMenu = await WeeklyMenu.findByIdAndUpdate(
+      req.params.menuId,
+      {
+        weekStart,
+        weekEnd,
+        orderDeadline: deadlineDate,
+        days,
+      },
+      { new: true },
+    );
+
+    if (!updatedMenu) {
+      return res.status(404).json({ message: "Menu not found" });
+    }
+
+    res.json(updatedMenu);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 router.get("/", async (req, res) => {
   try {
     const menu = await WeeklyMenu.findOne().sort({ createdAt: -1 });
@@ -38,7 +87,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ================= DELETE SINGLE MEAL =================
 router.delete("/:menuId/:day/:mealId", verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -68,7 +116,6 @@ router.delete("/:menuId/:day/:mealId", verifyToken, async (req, res) => {
   }
 });
 
-// ================= DELETE WHOLE MENU =================
 router.delete("/:menuId", verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);

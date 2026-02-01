@@ -21,14 +21,12 @@ router.post("/", verifyToken, async (req, res) => {
         .json({ error: "User has already submitted an order" });
     }
 
-    // 🔥 GET CURRENT MENU
     const menu = await WeeklyMenu.findOne().sort({ createdAt: -1 });
 
     if (!menu) {
       return res.status(400).json({ error: "No active menu" });
     }
 
-    // 🔥 DEADLINE CHECK
     const now = new Date();
 
     if (now > menu.orderDeadline) {
@@ -36,8 +34,6 @@ router.post("/", verifyToken, async (req, res) => {
         error: "Ordering deadline has passed",
       });
     }
-
-    // ---- existing logic ----
 
     const dayOrder = {
       Понеделник: 1,

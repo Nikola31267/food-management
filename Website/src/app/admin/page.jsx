@@ -13,15 +13,17 @@ const AdminPage = () => {
   const [loading, setLoading] = useState(true);
   const [weeklyMenu, setWeeklyMenu] = useState(null);
 
+  // CREATE FORM (top)
   const [form, setForm] = useState({
     weekStart: "",
     weekEnd: "",
-    orderDeadline: "", // ⬅️ NEW
-    days: DAYS.map((d) => ({
-      day: d,
-      meals: [],
-    })),
+    orderDeadline: "",
+    days: DAYS.map((d) => ({ day: d, meals: [] })),
   });
+
+  // EDIT MODE (bottom)
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState(null);
 
   const router = useRouter();
 
@@ -51,13 +53,10 @@ const AdminPage = () => {
 
   const fetchMenu = async () => {
     const res = await axiosInstance.get("/menu");
-
-    if (res.data?.days) {
-      setWeeklyMenu(res.data);
-    } else {
-      setWeeklyMenu(null);
-    }
+    setWeeklyMenu(res.data?.days ? res.data : null);
   };
+
+  /* ---------------- CREATE MENU ---------------- */
 
   const addMeal = (dayIndex) => {
     const copy = [...form.days];
@@ -72,6 +71,11 @@ const AdminPage = () => {
   };
 
   const handleSubmit = async () => {
+    if (!form.orderDeadline) {
+      alert("Please set an order deadline");
+      return;
+    }
+
     try {
       await axiosInstance.post("/menu", form, {
         headers: {
@@ -79,11 +83,51 @@ const AdminPage = () => {
         },
       });
 
-      alert("Weekly menu saved ✅");
-      await fetchMenu();
+      alert("Weekly menu created ✅");
+      fetchMenu();
     } catch {
       alert("Failed to save menu");
     }
+  };
+
+  /* ---------------- EDIT MENU ---------------- */
+
+  const startEditing = () => {
+    setEditForm(JSON.parse(JSON.stringify(weeklyMenu)));
+    setIsEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setEditForm(null);
+    setIsEditing(false);
+  };
+
+  const saveEdits = async () => {
+    try {
+      await axiosInstance.put(`/menu/${weeklyMenu._id}`, editForm, {
+        headers: {
+          "x-auth-token": localStorage.getItem("data-traffic-auth"),
+        },
+      });
+
+      alert("Menu updated ✅");
+      setIsEditing(false);
+      fetchMenu();
+    } catch {
+      alert("Failed to update menu");
+    }
+  };
+
+  const addEditMeal = (dayIndex) => {
+    const copy = [...editForm.days];
+    copy[dayIndex].meals.push({ name: "", price: "" });
+    setEditForm({ ...editForm, days: copy });
+  };
+
+  const handleEditMealChange = (dayIndex, mealIndex, field, value) => {
+    const copy = [...editForm.days];
+    copy[dayIndex].meals[mealIndex][field] = value;
+    setEditForm({ ...editForm, days: copy });
   };
 
   const deleteMenu = async () => {
@@ -96,16 +140,7 @@ const AdminPage = () => {
     });
 
     setWeeklyMenu(null);
-  };
-
-  const deleteMeal = async (day, mealId) => {
-    await axiosInstance.delete(`/menu/${weeklyMenu._id}/${day}/${mealId}`, {
-      headers: {
-        "x-auth-token": localStorage.getItem("data-traffic-auth"),
-      },
-    });
-
-    fetchMenu();
+    setIsEditing(false);
   };
 
   if (loading) return <Loader />;
@@ -118,6 +153,7 @@ const AdminPage = () => {
         View Orders
       </Link>
 
+      {/* ================= CREATE MENU ================= */}
       <div className="border rounded-lg p-6 space-y-6">
         <h2 className="text-xl font-semibold">Create Weekly Menu</h2>
 
@@ -128,7 +164,6 @@ const AdminPage = () => {
             value={form.weekStart}
             onChange={(e) => setForm({ ...form, weekStart: e.target.value })}
           />
-
           <input
             type="date"
             className="border p-2"
@@ -137,14 +172,21 @@ const AdminPage = () => {
           />
         </div>
 
+        <input
+          type="datetime-local"
+          className="border p-2 w-full"
+          value={form.orderDeadline}
+          onChange={(e) => setForm({ ...form, orderDeadline: e.target.value })}
+        />
+
         {form.days.map((day, dayIndex) => (
-          <div key={day.day} className="border rounded-lg p-4 space-y-3">
-            <h3 className="font-bold text-lg">{day.day}</h3>
+          <div key={day.day} className="border p-4 rounded">
+            <h3 className="font-bold">{day.day}</h3>
 
             {day.meals.map((meal, mealIndex) => (
-              <div key={mealIndex} className="border p-3 rounded space-y-2">
+              <div key={mealIndex} className="flex gap-2 mt-2">
                 <input
-                  className="border p-2 w-full"
+                  className="border p-2 flex-1"
                   placeholder="Meal name"
                   value={meal.name}
                   onChange={(e) =>
@@ -156,10 +198,9 @@ const AdminPage = () => {
                     )
                   }
                 />
-
                 <input
-                  className="border p-2 w-full"
                   type="number"
+                  className="border p-2 w-24"
                   placeholder="Price"
                   value={meal.price}
                   onChange={(e) =>
@@ -174,7 +215,11 @@ const AdminPage = () => {
               </div>
             ))}
 
-            <Button variant="outline" onClick={() => addMeal(dayIndex)}>
+            <Button
+              variant="outline"
+              className="mt-2"
+              onClick={() => addMeal(dayIndex)}
+            >
               + Add Meal
             </Button>
           </div>
@@ -183,50 +228,114 @@ const AdminPage = () => {
         <Button onClick={handleSubmit}>Save Weekly Menu</Button>
       </div>
 
-      {weeklyMenu?.days?.length > 0 && (
-        <div className="space-y-4">
+      {/* ================= CURRENT MENU / EDIT ================= */}
+      {weeklyMenu && (
+        <div className="border rounded-lg p-6 space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Current Weekly Menu</h2>
 
-            <Button variant="destructive" onClick={deleteMenu}>
-              Delete Weekly Menu
-            </Button>
+            <div className="flex gap-2">
+              {!isEditing && (
+                <Button variant="outline" onClick={startEditing}>
+                  ✏️ Edit
+                </Button>
+              )}
+              <Button variant="destructive" onClick={deleteMenu}>
+                Delete
+              </Button>
+            </div>
           </div>
 
-          <p className="text-gray-600">
-            {new Date(weeklyMenu.weekStart).toLocaleDateString()} –{" "}
-            {new Date(weeklyMenu.weekEnd).toLocaleDateString()}
-          </p>
+          {isEditing ? (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <input
+                  type="date"
+                  className="border p-2"
+                  value={editForm.weekStart}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, weekStart: e.target.value })
+                  }
+                />
+                <input
+                  type="date"
+                  className="border p-2"
+                  value={editForm.weekEnd}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, weekEnd: e.target.value })
+                  }
+                />
+              </div>
 
-          {weeklyMenu.days.map((day) => (
-            <div key={day.day} className="border rounded p-4">
-              <h3 className="font-bold">{day.day}</h3>
+              <input
+                type="datetime-local"
+                className="border p-2 w-full"
+                value={editForm.orderDeadline}
+                onChange={(e) =>
+                  setEditForm({
+                    ...editForm,
+                    orderDeadline: e.target.value,
+                  })
+                }
+              />
 
-              {day.meals.length === 0 ? (
-                <p className="text-gray-500">No meals</p>
-              ) : (
-                <ul className="space-y-1">
-                  {day.meals.map((meal) => (
-                    <li
-                      key={meal._id}
-                      className="flex justify-between items-center"
-                    >
-                      <span>
-                        {meal.name} — ${meal.price}
-                      </span>
+              {editForm.days.map((day, dayIndex) => (
+                <div key={day.day} className="border p-4 rounded">
+                  <h3 className="font-bold">{day.day}</h3>
 
-                      <button
-                        className="text-red-600 hover:text-red-800"
-                        onClick={() => deleteMeal(day.day, meal._id)}
-                      >
-                        ❌
-                      </button>
-                    </li>
+                  {day.meals.map((meal, mealIndex) => (
+                    <div key={mealIndex} className="flex gap-2 mt-2">
+                      <input
+                        className="border p-2 flex-1"
+                        value={meal.name}
+                        onChange={(e) =>
+                          handleEditMealChange(
+                            dayIndex,
+                            mealIndex,
+                            "name",
+                            e.target.value,
+                          )
+                        }
+                      />
+                      <input
+                        type="number"
+                        className="border p-2 w-24"
+                        value={meal.price}
+                        onChange={(e) =>
+                          handleEditMealChange(
+                            dayIndex,
+                            mealIndex,
+                            "price",
+                            e.target.value,
+                          )
+                        }
+                      />
+                    </div>
                   ))}
-                </ul>
-              )}
-            </div>
-          ))}
+
+                  <Button
+                    variant="outline"
+                    className="mt-2"
+                    onClick={() => addEditMeal(dayIndex)}
+                  >
+                    + Add Meal
+                  </Button>
+                </div>
+              ))}
+
+              <div className="flex gap-4">
+                <Button onClick={saveEdits}>Save Changes</Button>
+                <Button variant="outline" onClick={cancelEditing}>
+                  Cancel
+                </Button>
+              </div>
+            </>
+          ) : (
+            <p className="text-gray-600">
+              {new Date(weeklyMenu.weekStart).toLocaleDateString()} –{" "}
+              {new Date(weeklyMenu.weekEnd).toLocaleDateString()}
+            </p>
+          )}
         </div>
       )}
     </div>

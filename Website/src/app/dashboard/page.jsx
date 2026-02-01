@@ -75,7 +75,7 @@ const Dashboard = () => {
   };
 
   const addMealToOrder = (day, meal) => {
-    if (hasOrdered) return;
+    if (hasOrdered || menuExpired) return;
 
     setWeeklyOrder((prev) => {
       const dayMeals = prev[day] || [];
@@ -106,6 +106,8 @@ const Dashboard = () => {
   };
 
   const increaseQuantity = (day, mealId) => {
+    if (menuExpired) return;
+
     setWeeklyOrder((prev) => ({
       ...prev,
       [day]: prev[day].map((m) =>
@@ -115,6 +117,8 @@ const Dashboard = () => {
   };
 
   const decreaseQuantity = (day, mealId) => {
+    if (menuExpired) return;
+
     setWeeklyOrder((prev) => {
       const updated = prev[day]
         .map((m) =>
@@ -133,7 +137,7 @@ const Dashboard = () => {
   };
 
   const submitWeeklyOrder = async () => {
-    if (hasOrdered) return;
+    if (hasOrdered || menuExpired) return;
 
     try {
       await axiosInstance.post(
@@ -151,12 +155,13 @@ const Dashboard = () => {
       setWeeklyOrder({});
     } catch (err) {
       const message = err.response?.data?.error || "Failed to submit order";
-
       alert(message);
     }
   };
 
   const hasMenu = menu?.days?.some((day) => day.meals && day.meals.length > 0);
+  const menuExpired =
+    menu?.orderDeadline && new Date(menu.orderDeadline) < new Date();
 
   if (loading) return <Loader />;
 
@@ -176,9 +181,15 @@ const Dashboard = () => {
       <h1 className="text-3xl font-bold text-center mb-4">Weekly Menu</h1>
 
       {menu && (
-        <p className="text-center text-gray-600 mb-8">
+        <p className="text-center text-gray-600 mb-4">
           {new Date(menu.weekStart).toLocaleDateString()} –{" "}
           {new Date(menu.weekEnd).toLocaleDateString()}
+        </p>
+      )}
+
+      {menuExpired && (
+        <p className="text-center text-red-600 font-semibold mb-8">
+          Ordering is closed for this menu
         </p>
       )}
 
@@ -203,6 +214,10 @@ const Dashboard = () => {
                 ) : (
                   <p className="text-gray-500 text-sm">No order for this day</p>
                 )}
+              </div>
+            ) : menuExpired ? (
+              <div className="p-4 text-center text-gray-500">
+                Ordering is closed
               </div>
             ) : (
               <>
@@ -261,15 +276,11 @@ const Dashboard = () => {
         );
       })}
 
-      {!hasOrdered && hasMenu ? (
+      {!hasOrdered && hasMenu && !menuExpired && (
         <div className="flex justify-center gap-6 mt-8">
           <p className="text-xl font-bold">Total: ${totalPrice}</p>
           <Button onClick={submitWeeklyOrder}>Submit Weekly Order</Button>
         </div>
-      ) : (
-        <>
-          <h1>No menu</h1>
-        </>
       )}
 
       {hasOrdered && savedOrder && (
