@@ -83,6 +83,12 @@ const AdminPage = () => {
     setForm({ ...form, days: copy });
   };
 
+  const removeMeal = (dayIndex, mealIndex) => {
+    const copy = [...form.days];
+    copy[dayIndex].meals.splice(mealIndex, 1);
+    setForm({ ...form, days: copy });
+  };
+
   const handleMealChange = (dayIndex, mealIndex, field, value) => {
     const copy = [...form.days];
     copy[dayIndex].meals[mealIndex][field] = value;
@@ -103,7 +109,14 @@ const AdminPage = () => {
       });
 
       alert("Weekly menu created ✅");
-      fetchMenu();
+      await fetchMenu();
+
+      setForm({
+        weekStart: "",
+        weekEnd: "",
+        orderDeadline: "",
+        days: DAYS.map((d) => ({ day: d, meals: [] })),
+      });
     } catch {
       alert("Failed to save menu");
     }
@@ -151,6 +164,12 @@ const AdminPage = () => {
   const addEditMeal = (dayIndex) => {
     const copy = [...editForm.days];
     copy[dayIndex].meals.push({ name: "", price: "" });
+    setEditForm({ ...editForm, days: copy });
+  };
+
+  const removeEditMeal = (dayIndex, mealIndex) => {
+    const copy = [...editForm.days];
+    copy[dayIndex].meals.splice(mealIndex, 1);
     setEditForm({ ...editForm, days: copy });
   };
 
@@ -208,10 +227,10 @@ const AdminPage = () => {
           <div key={day.day} className="border p-4 rounded">
             <h3 className="font-bold">{day.day}</h3>
             {day.meals.map((meal, mealIndex) => (
-              <div key={mealIndex} className="flex gap-2 mt-2">
+              <div key={mealIndex} className="flex gap-2 mt-2 items-center">
                 <input
                   className="border p-2 flex-1"
-                  placeholder="Meal name"
+                  placeholder="Име на ястието"
                   value={meal.name}
                   onChange={(e) =>
                     handleMealChange(
@@ -226,7 +245,7 @@ const AdminPage = () => {
                   <input
                     type="number"
                     className="border p-2 w-24"
-                    placeholder="Price"
+                    placeholder="Цена"
                     value={meal.price}
                     onChange={(e) =>
                       handleMealChange(
@@ -239,8 +258,16 @@ const AdminPage = () => {
                   />
                   <p>€</p>
                 </div>
+                <Button
+                  variant="outline"
+                  onClick={() => removeMeal(dayIndex, mealIndex)}
+                  className="ml-4"
+                >
+                  −
+                </Button>
               </div>
             ))}
+
             <Button
               variant="outline"
               className="mt-2"
@@ -306,7 +333,10 @@ const AdminPage = () => {
                 <div key={day.day} className="border p-4 rounded">
                   <h3 className="font-bold">{day.day}</h3>
                   {day.meals.map((meal, mealIndex) => (
-                    <div key={mealIndex} className="flex gap-2 mt-2">
+                    <div
+                      key={mealIndex}
+                      className="flex gap-2 mt-2 items-center"
+                    >
                       <input
                         className="border p-2 flex-1"
                         value={meal.name}
@@ -335,8 +365,16 @@ const AdminPage = () => {
                         />
                         <p>€</p>
                       </div>
+                      <Button
+                        variant="outline"
+                        onClick={() => removeEditMeal(dayIndex, mealIndex)}
+                        className="ml-4"
+                      >
+                        −
+                      </Button>
                     </div>
                   ))}
+
                   <Button
                     variant="outline"
                     className="mt-2"

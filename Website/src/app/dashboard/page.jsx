@@ -142,6 +142,7 @@ const Dashboard = () => {
     });
   };
 
+  // ✅ Updated submitWeeklyOrder to show order immediately
   const submitWeeklyOrder = async () => {
     if (hasOrdered || menuExpired) return;
 
@@ -156,9 +157,26 @@ const Dashboard = () => {
         },
       );
 
-      alert("Order submitted ✅");
+      // Optimistic UI update: show order immediately
+      const newSavedOrder = {
+        menuId: menu._id,
+        days: Object.entries(weeklyOrder).map(([day, meals]) => ({
+          day,
+          meals: meals.map((m) => ({
+            mealName: m.name,
+            quantity: m.quantity,
+            price: m.price,
+          })),
+        })),
+        totalPrice,
+        paid: false,
+      };
+
+      setSavedOrder(newSavedOrder);
       setHasOrdered(true);
       setWeeklyOrder({});
+
+      alert("Order submitted ✅");
     } catch (err) {
       const message = err.response?.data?.error || "Failed to submit order";
       alert(message);
@@ -194,25 +212,34 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <h1 className="text-3xl font-bold text-center mb-4">Меню за седмица:</h1>
+      {!menu && (
+        <h1 className="text-xl font-bold text-center mb-4 text-gray-600">
+          Няма активно меню за седмицата
+        </h1>
+      )}
 
       {menu && (
-        <div className="flex flex-col text-center gap-2 text-gray-600">
-          <p>
-            {new Date(menu.weekStart).toLocaleDateString()} –{" "}
-            {new Date(menu.weekEnd).toLocaleDateString()}
-          </p>
-          <p>
-            Последна поръчка:{" "}
-            {new Date(menu.orderDeadline).toLocaleString("bg-BG", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
-        </div>
+        <>
+          <h1 className="text-3xl font-bold text-center mb-4">
+            Меню за седмица:
+          </h1>
+          <div className="flex flex-col text-center gap-2 text-gray-600">
+            <p>
+              {new Date(menu.weekStart).toLocaleDateString()} –{" "}
+              {new Date(menu.weekEnd).toLocaleDateString()}
+            </p>
+            <p>
+              Последна поръчка:{" "}
+              {new Date(menu.orderDeadline).toLocaleString("bg-BG", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
+          </div>
+        </>
       )}
 
       {menuExpired && (

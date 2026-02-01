@@ -1,8 +1,8 @@
 const config = {
   appName: "Food Management",
-  domainName: "https://tracking-website-rosy.vercel.app",
+  domainName: "http://localhost:3000",
   description: "",
-  supportEmail: "nikola.minchev13@gmail.com",
+  supportEmail: "et.nikola.min@eduiteh.eu",
 };
 
 export default config;
