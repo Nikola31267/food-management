@@ -198,7 +198,10 @@ const Dashboard = () => {
 
         <div className="flex items-center gap-4">
           {user?.role === "admin" && (
-            <Link href="/admin" className="hover:underline">
+            <Link
+              href="/admin"
+              className="hover:underline hover:text-[#387fa5] transition-colors duration-200"
+            >
               Admin
             </Link>
           )}
