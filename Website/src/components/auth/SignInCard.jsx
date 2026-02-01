@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+import Link from "next/link";
 
 const SignInCard = ({ handleGoogleLoginSuccess, handleGoogleLoginFailure }) => {
   return (
@@ -45,19 +46,20 @@ const SignInCard = ({ handleGoogleLoginSuccess, handleGoogleLoginFailure }) => {
         <div className="mt-8 text-center">
           <p className="text-xs text-muted-foreground leading-relaxed">
             С вашата регистрация се съгласявате с нашите{" "}
-            <Button
-              variant="link"
+            <Link
+              href="/terms-of-service"
               className="p-0 h-auto text-xs text-[#478BAF] hover:underline"
             >
               Terms of Service
-            </Button>{" "}
+            </Link>{" "}
             и{" "}
-            <Button
+            <Link
+              href="/privacy-policy"
               variant="link"
               className="p-0 h-auto text-xs text-[#478BAF] hover:underline"
             >
               Privacy Policy
-            </Button>
+            </Link>
           </p>
         </div>
 
