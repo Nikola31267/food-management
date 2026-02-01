@@ -10,20 +10,22 @@ export const ShinyButton = ({
   icon,
   disabled,
   pricing,
+  onClick,
   ...props
 }) => (
   <Link
     href={disabled ? "/#pricing" : href}
+    onClick={onClick}
     {...(pricing && !disabled && { target: "_blank" })}
     {...(pricing && !disabled && { rel: "noopener noreferrer" })}
     className={cn(
       `${
         !disabled &&
-        "group relative flex transform items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-md border border-white bg-purple-500 px-8 text-base/7 font-medium text-white transition-all duration-300 hover:ring-2 hover:ring-purple-500 hover:ring-offset-2 focus:outline-none focus:ring-2 focus:ring-offset-2"
+        "group relative flex transform items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-md border border-white bg-[#478BAF] px-8 text-base/7 font-medium text-white transition-all duration-300 hover:ring-2 hover:ring-[#478BAF] hover:ring-offset-2 focus:outline-none focus:ring-2 focus:ring-offset-2"
       }`,
-      "group relative flex transform items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-md border border-white bg-purple-500 px-8 text-base/7 font-medium text-white transition-all duration-300",
+      "group relative flex transform items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-md border border-white bg-[#478BAF] px-8 text-base/7 font-medium text-white transition-all duration-300",
       className,
-      disabled && "opacity-50 cursor-not-allowed"
+      disabled && "opacity-50 cursor-not-allowed",
     )}
     {...props}
   >

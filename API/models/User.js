@@ -24,6 +24,11 @@ const dayOrderSchema = new mongoose.Schema({
 });
 
 const weeklyOrderSchema = new mongoose.Schema({
+  menuId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "WeeklyMenu",
+    required: true,
+  },
   days: [dayOrderSchema],
   totalPrice: {
     type: Number,

@@ -5,7 +5,8 @@ import { axiosInstance } from "@/lib/axios";
 import Loader from "@/components/layout/Loader";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import Navbar from "@/components/admin/Navbar";
+import { ShinyButton } from "@/components/ui/shiny-button";
 
 const DAYS = ["Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък"];
 
@@ -13,7 +14,6 @@ const AdminPage = () => {
   const [loading, setLoading] = useState(true);
   const [weeklyMenu, setWeeklyMenu] = useState(null);
 
-  // CREATE FORM (top)
   const [form, setForm] = useState({
     weekStart: "",
     weekEnd: "",
@@ -21,11 +21,32 @@ const AdminPage = () => {
     days: DAYS.map((d) => ({ day: d, meals: [] })),
   });
 
-  // EDIT MODE (bottom)
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState(null);
 
   const router = useRouter();
+
+  const formatDateForInput = (isoDate) => {
+    if (!isoDate) return "";
+    const d = new Date(isoDate);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatDateTimeForInput = (isoDate) => {
+    if (!isoDate) return "";
+    const d = new Date(isoDate);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  const toISO = (localDate) => new Date(localDate).toISOString();
 
   useEffect(() => {
     const init = async () => {
@@ -55,8 +76,6 @@ const AdminPage = () => {
     const res = await axiosInstance.get("/menu");
     setWeeklyMenu(res.data?.days ? res.data : null);
   };
-
-  /* ---------------- CREATE MENU ---------------- */
 
   const addMeal = (dayIndex) => {
     const copy = [...form.days];
@@ -90,10 +109,14 @@ const AdminPage = () => {
     }
   };
 
-  /* ---------------- EDIT MENU ---------------- */
-
   const startEditing = () => {
-    setEditForm(JSON.parse(JSON.stringify(weeklyMenu)));
+    const copy = JSON.parse(JSON.stringify(weeklyMenu));
+
+    copy.weekStart = formatDateForInput(copy.weekStart);
+    copy.weekEnd = formatDateForInput(copy.weekEnd);
+    copy.orderDeadline = formatDateTimeForInput(copy.orderDeadline);
+
+    setEditForm(copy);
     setIsEditing(true);
   };
 
@@ -104,7 +127,14 @@ const AdminPage = () => {
 
   const saveEdits = async () => {
     try {
-      await axiosInstance.put(`/menu/${weeklyMenu._id}`, editForm, {
+      const payload = {
+        ...editForm,
+        weekStart: toISO(editForm.weekStart),
+        weekEnd: toISO(editForm.weekEnd),
+        orderDeadline: toISO(editForm.orderDeadline),
+      };
+
+      await axiosInstance.put(`/menu/${weeklyMenu._id}`, payload, {
         headers: {
           "x-auth-token": localStorage.getItem("data-traffic-auth"),
         },
@@ -147,15 +177,10 @@ const AdminPage = () => {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-12">
-      <h1 className="text-3xl font-bold">Admin Weekly Menu</h1>
+      <Navbar />
 
-      <Link href="/admin/orders" className="text-blue-600 underline">
-        View Orders
-      </Link>
-
-      {/* ================= CREATE MENU ================= */}
       <div className="border rounded-lg p-6 space-y-6">
-        <h2 className="text-xl font-semibold">Create Weekly Menu</h2>
+        <h2 className="text-xl font-semibold">Създай седмично меню</h2>
 
         <div className="grid grid-cols-2 gap-4">
           <input
@@ -182,7 +207,6 @@ const AdminPage = () => {
         {form.days.map((day, dayIndex) => (
           <div key={day.day} className="border p-4 rounded">
             <h3 className="font-bold">{day.day}</h3>
-
             {day.meals.map((meal, mealIndex) => (
               <div key={mealIndex} className="flex gap-2 mt-2">
                 <input
@@ -198,50 +222,52 @@ const AdminPage = () => {
                     )
                   }
                 />
-                <input
-                  type="number"
-                  className="border p-2 w-24"
-                  placeholder="Price"
-                  value={meal.price}
-                  onChange={(e) =>
-                    handleMealChange(
-                      dayIndex,
-                      mealIndex,
-                      "price",
-                      e.target.value,
-                    )
-                  }
-                />
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    className="border p-2 w-24"
+                    placeholder="Price"
+                    value={meal.price}
+                    onChange={(e) =>
+                      handleMealChange(
+                        dayIndex,
+                        mealIndex,
+                        "price",
+                        e.target.value,
+                      )
+                    }
+                  />
+                  <p>€</p>
+                </div>
               </div>
             ))}
-
             <Button
               variant="outline"
               className="mt-2"
               onClick={() => addMeal(dayIndex)}
             >
-              + Add Meal
+              + Добави ястие
             </Button>
           </div>
         ))}
 
-        <Button onClick={handleSubmit}>Save Weekly Menu</Button>
+        <ShinyButton href="#" className="p-2" onClick={handleSubmit}>
+          Създай
+        </ShinyButton>
       </div>
 
-      {/* ================= CURRENT MENU / EDIT ================= */}
       {weeklyMenu && (
         <div className="border rounded-lg p-6 space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Current Weekly Menu</h2>
-
+            <h2 className="text-xl font-semibold">Сегашно меню</h2>
             <div className="flex gap-2">
               {!isEditing && (
                 <Button variant="outline" onClick={startEditing}>
-                  ✏️ Edit
+                  ✏️ Редактирай
                 </Button>
               )}
               <Button variant="destructive" onClick={deleteMenu}>
-                Delete
+                Изтрий
               </Button>
             </div>
           </div>
@@ -272,17 +298,13 @@ const AdminPage = () => {
                 className="border p-2 w-full"
                 value={editForm.orderDeadline}
                 onChange={(e) =>
-                  setEditForm({
-                    ...editForm,
-                    orderDeadline: e.target.value,
-                  })
+                  setEditForm({ ...editForm, orderDeadline: e.target.value })
                 }
               />
 
               {editForm.days.map((day, dayIndex) => (
                 <div key={day.day} className="border p-4 rounded">
                   <h3 className="font-bold">{day.day}</h3>
-
                   {day.meals.map((meal, mealIndex) => (
                     <div key={mealIndex} className="flex gap-2 mt-2">
                       <input
@@ -297,36 +319,38 @@ const AdminPage = () => {
                           )
                         }
                       />
-                      <input
-                        type="number"
-                        className="border p-2 w-24"
-                        value={meal.price}
-                        onChange={(e) =>
-                          handleEditMealChange(
-                            dayIndex,
-                            mealIndex,
-                            "price",
-                            e.target.value,
-                          )
-                        }
-                      />
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          className="border p-2 w-24"
+                          value={meal.price}
+                          onChange={(e) =>
+                            handleEditMealChange(
+                              dayIndex,
+                              mealIndex,
+                              "price",
+                              e.target.value,
+                            )
+                          }
+                        />
+                        <p>€</p>
+                      </div>
                     </div>
                   ))}
-
                   <Button
                     variant="outline"
                     className="mt-2"
                     onClick={() => addEditMeal(dayIndex)}
                   >
-                    + Add Meal
+                    + Добави ястие
                   </Button>
                 </div>
               ))}
 
               <div className="flex gap-4">
-                <Button onClick={saveEdits}>Save Changes</Button>
+                <Button onClick={saveEdits}>Запази промените</Button>
                 <Button variant="outline" onClick={cancelEditing}>
-                  Cancel
+                  Откажи
                 </Button>
               </div>
             </>

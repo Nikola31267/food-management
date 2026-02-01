@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { ShinyButton } from "@/components/ui/shiny-button";
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
@@ -34,10 +35,15 @@ const Dashboard = () => {
         });
 
         setUser(userRes.data);
+        const latestMenuId = menu?._id;
 
-        if (userRes.data.orders?.length > 0) {
+        const userOrderForMenu = userRes.data.orders?.find(
+          (o) => o.menuId === latestMenuId,
+        );
+
+        if (userOrderForMenu) {
           setHasOrdered(true);
-          setSavedOrder(userRes.data.orders[0]);
+          setSavedOrder(userOrderForMenu);
         }
 
         if (!userRes.data.grade) router.push("/grade");
@@ -49,7 +55,7 @@ const Dashboard = () => {
     };
 
     init();
-  }, [router]);
+  }, [router, menu]);
 
   useEffect(() => {
     const fetchMenu = async () => {
@@ -172,24 +178,46 @@ const Dashboard = () => {
           <Image src="/logo-nobg.png" alt="Logo" width={48} height={48} />
         </Link>
 
-        <div className="flex gap-4">
-          {user?.role === "admin" && <Link href="/admin">Admin</Link>}
-          <Button onClick={handleLogout}>Sign out</Button>
+        <div className="flex items-center gap-4">
+          {user?.role === "admin" && (
+            <Link href="/admin" className="hover:underline">
+              Admin
+            </Link>
+          )}
+          <ShinyButton
+            className="bg-[#478BAF] hover:bg-[#387fa5] py-1 px-1.5"
+            href="#"
+            onClick={handleLogout}
+          >
+            Излез от профила
+          </ShinyButton>
         </div>
       </div>
 
-      <h1 className="text-3xl font-bold text-center mb-4">Weekly Menu</h1>
+      <h1 className="text-3xl font-bold text-center mb-4">Меню за седмица:</h1>
 
       {menu && (
-        <p className="text-center text-gray-600 mb-4">
-          {new Date(menu.weekStart).toLocaleDateString()} –{" "}
-          {new Date(menu.weekEnd).toLocaleDateString()}
-        </p>
+        <div className="flex flex-col text-center gap-2 text-gray-600">
+          <p>
+            {new Date(menu.weekStart).toLocaleDateString()} –{" "}
+            {new Date(menu.weekEnd).toLocaleDateString()}
+          </p>
+          <p>
+            Последна поръчка:{" "}
+            {new Date(menu.orderDeadline).toLocaleString("bg-BG", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </p>
+        </div>
       )}
 
       {menuExpired && (
         <p className="text-center text-red-600 font-semibold mb-8">
-          Ordering is closed for this menu
+          Поръчките за тази седмица са затворени
         </p>
       )}
 
@@ -208,16 +236,18 @@ const Dashboard = () => {
                       <span>
                         {meal.mealName} × {meal.quantity}
                       </span>
-                      <span>${meal.price * meal.quantity}</span>
+                      <span>€{meal.price * meal.quantity}</span>
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-500 text-sm">No order for this day</p>
+                  <p className="text-gray-500 text-sm">
+                    Няма поръчка за този ден
+                  </p>
                 )}
               </div>
             ) : menuExpired ? (
               <div className="p-4 text-center text-gray-500">
-                Ordering is closed
+                Поръчването приключи
               </div>
             ) : (
               <>
@@ -226,14 +256,14 @@ const Dashboard = () => {
                     {day.meals.length === 0 ? (
                       <tr>
                         <td className="p-4 text-center text-gray-500">
-                          No meals
+                          Няма зададена храна
                         </td>
                       </tr>
                     ) : (
                       day.meals.map((meal) => (
                         <tr key={meal._id} className="border-t">
                           <td className="p-2">{meal.name}</td>
-                          <td className="p-2">${meal.price}</td>
+                          <td className="p-2">€{meal.price}</td>
                           <td className="p-2 text-center">
                             <button
                               onClick={() => addMealToOrder(day.day, meal)}
@@ -264,7 +294,7 @@ const Dashboard = () => {
                           ➕
                         </button>
                         <span className="ml-auto">
-                          ${meal.price * meal.quantity}
+                          €{meal.price * meal.quantity}
                         </span>
                       </div>
                     ))}
@@ -278,14 +308,37 @@ const Dashboard = () => {
 
       {!hasOrdered && hasMenu && !menuExpired && (
         <div className="flex justify-center gap-6 mt-8">
-          <p className="text-xl font-bold">Total: ${totalPrice}</p>
-          <Button onClick={submitWeeklyOrder}>Submit Weekly Order</Button>
+          <p className="text-xl font-bold">
+            Общо:{" "}
+            <span>
+              {new Intl.NumberFormat("de-DE", {
+                style: "currency",
+                currency: "EUR",
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }).format(totalPrice)}
+            </span>
+          </p>
+          <Button onClick={submitWeeklyOrder}>Поръчай</Button>
         </div>
       )}
 
       {hasOrdered && savedOrder && (
         <div className="text-center mt-8 text-xl font-bold">
-          Weekly Total: ${savedOrder.totalPrice}
+          Дължима сума:{" "}
+          {savedOrder?.paid ? (
+            <span>0 €</span>
+          ) : (
+            <span>
+              {new Intl.NumberFormat("de-DE", {
+                style: "currency",
+                currency: "EUR",
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }).format(savedOrder.totalPrice)}
+            </span>
+          )}
+          <p>Платено: {savedOrder?.paid ? <>Да</> : <>Не</>}</p>
         </div>
       )}
     </div>

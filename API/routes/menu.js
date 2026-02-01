@@ -124,9 +124,15 @@ router.delete("/:menuId", verifyToken, async (req, res) => {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    await WeeklyMenu.findByIdAndDelete(req.params.menuId);
+    const menuId = req.params.menuId;
 
-    res.json({ message: "Weekly menu deleted" });
+    // Delete the menu
+    await WeeklyMenu.findByIdAndDelete(menuId);
+
+    // Remove all orders linked to this menu from all users
+    await User.updateMany({}, { $pull: { orders: { menuId: menuId } } });
+
+    res.json({ message: "Weekly menu and all related orders deleted" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

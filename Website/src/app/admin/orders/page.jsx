@@ -5,6 +5,9 @@ import { axiosInstance } from "@/lib/axios";
 import Loader from "@/components/layout/Loader";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Navbar from "@/components/admin/Navbar";
+import { ShinyButton } from "@/components/ui/shiny-button";
+import { Trash } from "lucide-react";
 
 const AdminOrdersPage = () => {
   const [ordersData, setOrdersData] = useState([]);
@@ -148,36 +151,34 @@ const AdminOrdersPage = () => {
 
   return (
     <div className="p-8 min-h-screen bg-gray-100">
-      <h1 className="text-3xl font-bold mb-6">All Users Orders</h1>
+      <Navbar />
+      <h1 className="text-3xl font-bold mb-6">Поръчки</h1>
 
-      <div className="flex gap-4 mb-4">
-        <Link href="/admin" className="text-blue-600 underline">
-          Back
-        </Link>
-
-        <button
+      {ordersData.length !== 0 && (
+        <ShinyButton
           onClick={downloadFoodByClassCSV}
-          className=" bg-purple-600 text-white rounded hover:bg-purple-700"
+          href="/"
+          className="p-2 mb-2 mt-2"
         >
-          Export Food by Class
-        </button>
-      </div>
+          Експортирай поръчките
+        </ShinyButton>
+      )}
 
       {error && <p className="text-red-500 mb-4">{error}</p>}
 
       {ordersData.length === 0 ? (
-        <p>No orders submitted yet.</p>
+        <p>Няма поръчки.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full border-collapse border">
             <thead>
               <tr className="bg-gray-200">
-                <th className="border p-2">Name</th>
-                <th className="border p-2">Grade</th>
-                <th className="border p-2">Orders</th>
-                <th className="border p-2">Total Price</th>
-                <th className="border p-2">Paid</th>
-                <th className="border p-2">Actions</th>
+                <th className="border p-2">Име</th>
+                <th className="border p-2">Клас</th>
+                <th className="border p-2">Поръчка</th>
+                <th className="border p-2">Сума (€)</th>
+                <th className="border p-2">Платено</th>
+                <th className="border p-2">Действия</th>
               </tr>
             </thead>
             <tbody>
@@ -193,7 +194,7 @@ const AdminOrdersPage = () => {
                           <ul className="ml-4">
                             {day.meals.map((meal) => (
                               <li key={meal.mealName}>
-                                {meal.mealName} x {meal.quantity} = $
+                                {meal.mealName} x {meal.quantity} = €
                                 {meal.price * meal.quantity}
                               </li>
                             ))}
@@ -201,16 +202,27 @@ const AdminOrdersPage = () => {
                         </div>
                       ))}
                     </td>
-                    <td className="border p-2 font-bold">${week.totalPrice}</td>
+                    <td className="border p-2 font-bold">
+                      <span>
+                        {new Intl.NumberFormat("de-DE", {
+                          style: "currency",
+                          currency: "EUR",
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        }).format(week.totalPrice)}
+                      </span>
+                    </td>
                     <td className="border p-2 text-center">
                       {week.paid ? (
-                        <span className="text-green-600 font-bold">Paid</span>
+                        <span className="text-green-600 font-bold">
+                          Платено
+                        </span>
                       ) : (
                         <button
                           onClick={() => markAsPaid(user._id, week._id)}
                           className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
                         >
-                          Mark as Paid
+                          Маркирай като платено
                         </button>
                       )}
                     </td>
@@ -219,7 +231,7 @@ const AdminOrdersPage = () => {
                         onClick={() => deleteOrder(user._id, week._id)}
                         className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
                       >
-                        Delete
+                        <Trash />
                       </button>
                     </td>
                   </tr>

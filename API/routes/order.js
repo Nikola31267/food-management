@@ -11,29 +11,31 @@ dotenv.config();
 router.post("/", verifyToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { weeklyOrder, totalPrice } = req.body;
+    const { weeklyOrder } = req.body;
 
     const user = await User.findById(userId);
 
-    if (user.orders && user.orders.length > 0) {
+    const menu = await WeeklyMenu.findOne().sort({ createdAt: -1 });
+    if (!menu) return res.status(400).json({ error: "No active menu" });
+
+    const now = new Date();
+    if (now > menu.orderDeadline)
+      return res.status(403).json({ error: "Ordering deadline has passed" });
+
+    const existingOrder = user.orders.find(
+      (order) => order.menuId?.toString() === menu._id.toString(),
+    );
+    if (existingOrder)
       return res
         .status(400)
         .json({ error: "User has already submitted an order" });
-    }
 
-    const menu = await WeeklyMenu.findOne().sort({ createdAt: -1 });
-
-    if (!menu) {
-      return res.status(400).json({ error: "No active menu" });
-    }
-
-    const now = new Date();
-
-    if (now > menu.orderDeadline) {
-      return res.status(403).json({
-        error: "Ordering deadline has passed",
-      });
-    }
+    const weeklyOrderObj = {
+      menuId: menu._id,
+      days: [],
+      totalPrice: 0,
+      paid: false,
+    };
 
     const dayOrder = {
       Понеделник: 1,
@@ -43,12 +45,6 @@ router.post("/", verifyToken, async (req, res) => {
       Петък: 5,
     };
 
-    const weeklyOrderObj = {
-      days: [],
-      totalPrice,
-      paid: false,
-    };
-
     const orderedDays = Object.keys(weeklyOrder).sort(
       (a, b) => dayOrder[a] - dayOrder[b],
     );
@@ -56,9 +52,16 @@ router.post("/", verifyToken, async (req, res) => {
     for (const day of orderedDays) {
       const dayMeals = weeklyOrder[day].map((m) => ({
         mealName: m.name,
+        mealId: m.mealId,
         quantity: m.quantity,
         price: m.price,
       }));
+
+      const dayTotal = dayMeals.reduce(
+        (sum, m) => sum + m.price * m.quantity,
+        0,
+      );
+      weeklyOrderObj.totalPrice += dayTotal;
 
       weeklyOrderObj.days.push({ day, meals: dayMeals });
     }
@@ -68,7 +71,7 @@ router.post("/", verifyToken, async (req, res) => {
 
     res.status(200).json({
       message: "Order saved successfully",
-      totalPrice,
+      totalPrice: weeklyOrderObj.totalPrice,
     });
   } catch (err) {
     console.error(err);
