@@ -29,7 +29,7 @@ router.post("/google-signin", async (req, res) => {
 
     if (!email_verified) {
       return res.status(403).json({
-        message: "Имейлът не е верифициран",
+        message: "Google email is not verified",
       });
     }
 
