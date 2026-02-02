@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import Loader from "@/components/layout/Loader";
 import { ChevronRight } from "lucide-react";
 import { ShinyButton } from "@/components/ui/shiny-button";
+import { toast } from "react-toastify";
 
 const CLASSES = {
   8: ["8а", "8б", "8в"],
@@ -72,7 +73,7 @@ export default function DropdownMenuBasic() {
 
   const handleSave = async () => {
     if (!selectedGrade) {
-      alert("Please select a class first");
+      toast.error("Моля изберете клас първо!");
       return;
     }
 
@@ -89,11 +90,11 @@ export default function DropdownMenuBasic() {
         },
       );
 
-      alert("Grade saved successfully ✅");
+      toast.success("Класът е запазен успешно. Добре дошли!");
       router.push("/dashboard");
     } catch (err) {
       console.error(err);
-      alert("Failed to save grade");
+      toast.error("Грешка при запазването на класа!");
     } finally {
       setLoading(false);
     }
@@ -113,9 +114,7 @@ export default function DropdownMenuBasic() {
     <div className="flex gap-3 items-center">
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
-          {/* Card */}
           <div className="bg-card rounded-2xl border border-border shadow-sm p-8">
-            {/* Step Indicator */}
             <div className="flex items-center gap-3 mb-8">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#478BAF] text-sm font-medium text-white">
                 1

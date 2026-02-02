@@ -1,8 +1,7 @@
 import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
 import { getSEOTags } from "@/lib/seo";
 import { Poppins } from "next/font/google";
-import Script from "next/script";
+import { Bounce, ToastContainer } from "react-toastify";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -20,7 +19,11 @@ export default function RootLayout({ children }) {
         style={{ fontFamily: "var(--font-poppins)" }}
       >
         {children}
-        <Toaster />
+        <ToastContainer
+          pauseOnHover={false}
+          theme="light"
+          transition={Bounce}
+        />
       </body>
     </html>
   );

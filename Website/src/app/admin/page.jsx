@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/admin/Navbar";
 import { ShinyButton } from "@/components/ui/shiny-button";
+import { toast } from "react-toastify";
 
 const DAYS = ["Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък"];
 
@@ -127,7 +128,7 @@ const AdminPage = () => {
 
   const handleSubmit = async () => {
     if (!form.orderDeadline) {
-      alert("Please set an order deadline");
+      toast.error("Please set an order deadline");
       return;
     }
 
@@ -138,7 +139,7 @@ const AdminPage = () => {
         },
       });
 
-      alert("Weekly menu created ✅");
+      toast.success("Weekly menu created ✅");
       await fetchMenu();
 
       setForm({
@@ -148,7 +149,7 @@ const AdminPage = () => {
         days: DAYS.map((d) => ({ day: d, meals: [] })),
       });
     } catch {
-      alert("Failed to save menu");
+      toast.error("Failed to save menu");
     }
   };
 
@@ -183,11 +184,11 @@ const AdminPage = () => {
         },
       });
 
-      alert("Menu updated ✅");
+      toast.success("Menu updated ✅");
       setIsEditing(false);
       fetchMenu();
     } catch {
-      alert("Failed to update menu");
+      toast.error("Failed to update menu");
     }
   };
 

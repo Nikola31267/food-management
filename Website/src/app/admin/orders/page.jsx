@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/admin/Navbar";
 import { ShinyButton } from "@/components/ui/shiny-button";
 import { Trash } from "lucide-react";
+import { toast } from "react-toastify";
 
 const AdminOrdersPage = () => {
   const [ordersData, setOrdersData] = useState([]);
@@ -124,11 +125,11 @@ const AdminOrdersPage = () => {
           },
         },
       );
-      alert("Order marked as paid ✅");
+      toast.success("Поръчката е означена като платена!");
       fetchOrders();
     } catch (err) {
       console.error(err);
-      alert("Failed to mark order as paid ❌");
+      toast.error("Грешка при означаването като платено!");
     }
   };
 
@@ -141,11 +142,11 @@ const AdminOrdersPage = () => {
           "x-auth-token": localStorage.getItem("data-traffic-auth"),
         },
       });
-      alert("Order deleted successfully 🗑️");
+      toast.success("Поръчката е изтрита успешно!");
       fetchOrders();
     } catch (err) {
       console.error(err);
-      alert("Failed to delete order ❌");
+      toast.error("Грешка при изтриването на поръчката!");
     }
   };
 

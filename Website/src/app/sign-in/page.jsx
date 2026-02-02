@@ -2,15 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { axiosInstance } from "@/lib/axios";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Loader from "@/components/layout/Loader";
 import SignInCard from "@/components/auth/SignInCard";
+import { toast } from "react-toastify";
 
 export default function Login() {
   const [error, setError] = useState(null);
   const [message, setMessage] = useState("");
   const [loadingAuth, setLoadingAuth] = useState(true);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (
@@ -23,6 +25,12 @@ export default function Login() {
       setLoadingAuth(false);
     }
   }, [router]);
+
+  useEffect(() => {
+    if (searchParams.get("logged_out")) {
+      toast.success("Успешно излязохте от профила си!");
+    }
+  }, [searchParams]);
 
   const handleGoogleLoginSuccess = async (credentialResponse) => {
     const token = credentialResponse.credential;

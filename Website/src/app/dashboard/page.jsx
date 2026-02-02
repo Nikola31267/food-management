@@ -8,6 +8,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ShinyButton } from "@/components/ui/shiny-button";
+import { toast } from "react-toastify";
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
@@ -72,7 +73,7 @@ const Dashboard = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("data-traffic-auth");
-    window.location.href = "/sign-in";
+    window.location.href = "/sign-in?logged_out=true";
   };
 
   const getOrderedDay = (dayName) => {
@@ -142,7 +143,6 @@ const Dashboard = () => {
     });
   };
 
-  // ✅ Updated submitWeeklyOrder to show order immediately
   const submitWeeklyOrder = async () => {
     if (hasOrdered || menuExpired) return;
 
@@ -157,7 +157,6 @@ const Dashboard = () => {
         },
       );
 
-      // Optimistic UI update: show order immediately
       const newSavedOrder = {
         menuId: menu._id,
         days: Object.entries(weeklyOrder).map(([day, meals]) => ({
@@ -176,10 +175,10 @@ const Dashboard = () => {
       setHasOrdered(true);
       setWeeklyOrder({});
 
-      alert("Order submitted ✅");
+      toast.success("Поръчката е изпратена!");
     } catch (err) {
       const message = err.response?.data?.error || "Failed to submit order";
-      alert(message);
+      toast.error(message);
     }
   };
 
