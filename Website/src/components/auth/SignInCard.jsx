@@ -5,7 +5,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import Link from "next/link";
 
@@ -61,14 +60,6 @@ const SignInCard = ({ handleGoogleLoginSuccess, handleGoogleLoginFailure }) => {
               Privacy Policy
             </Link>
           </p>
-        </div>
-
-        <div className="mt-6 flex items-center gap-3">
-          <div className="h-px flex-1 bg-border" />
-          <span className="text-xs text-muted-foreground">
-            School cafeteria made easy
-          </span>
-          <div className="h-px flex-1 bg-border" />
         </div>
       </CardContent>
     </Card>
