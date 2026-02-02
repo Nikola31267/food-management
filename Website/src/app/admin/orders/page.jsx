@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/admin/Navbar";
 import { ShinyButton } from "@/components/ui/shiny-button";
-import { Trash } from "lucide-react";
+import { Loader2, Trash } from "lucide-react";
 import { toast } from "react-toastify";
 
 const AdminOrdersPage = () => {
@@ -15,6 +15,7 @@ const AdminOrdersPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [user, setUser] = useState("");
+  const [submiting, setSubmiting] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -116,6 +117,7 @@ const AdminOrdersPage = () => {
 
   const markAsPaid = async (userId, orderId) => {
     try {
+      setSubmiting(true);
       await axiosInstance.put(
         `/admin/orders/paid/${userId}/${orderId}`,
         {},
@@ -127,6 +129,7 @@ const AdminOrdersPage = () => {
       );
       toast.success("Поръчката е означена като платена!");
       fetchOrders();
+      setSubmiting(false);
     } catch (err) {
       console.error(err);
       toast.error("Грешка при означаването като платено!");
@@ -135,6 +138,7 @@ const AdminOrdersPage = () => {
 
   const deleteOrder = async (userId, orderId) => {
     if (!confirm("Are you sure you want to delete this order?")) return;
+    setSubmiting(true);
 
     try {
       await axiosInstance.delete(`/admin/orders/${userId}/${orderId}`, {
@@ -144,6 +148,7 @@ const AdminOrdersPage = () => {
       });
       toast.success("Поръчката е изтрита успешно!");
       fetchOrders();
+      setSubmiting(false);
     } catch (err) {
       console.error(err);
       toast.error("Грешка при изтриването на поръчката!");
@@ -223,18 +228,28 @@ const AdminOrdersPage = () => {
                       ) : (
                         <button
                           onClick={() => markAsPaid(user._id, week._id)}
+                          disabled={submiting}
                           className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
                         >
-                          Маркирай като платено
+                          {submiting ? (
+                            <Loader2 className="animate-spin" />
+                          ) : (
+                            <span>Маркирай като платено</span>
+                          )}
                         </button>
                       )}
                     </td>
                     <td className="border p-2 text-center">
                       <button
                         onClick={() => deleteOrder(user._id, week._id)}
+                        disabled={submiting}
                         className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
                       >
-                        <Trash />
+                        {submiting ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <Trash />
+                        )}
                       </button>
                     </td>
                   </tr>

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import Navbar from "@/components/admin/Navbar";
 import { ShinyButton } from "@/components/ui/shiny-button";
 import { toast } from "react-toastify";
+import { Loader2 } from "lucide-react";
 
 const DAYS = ["Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък"];
 
@@ -16,6 +17,7 @@ const AdminPage = () => {
   const [error, setError] = useState("");
   const [user, setUser] = useState("");
   const [weeklyMenu, setWeeklyMenu] = useState(null);
+  const [submiting, setSubmiting] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -132,6 +134,8 @@ const AdminPage = () => {
       return;
     }
 
+    setSubmiting(true);
+
     try {
       await axiosInstance.post("/menu", form, {
         headers: {
@@ -141,6 +145,7 @@ const AdminPage = () => {
 
       toast.success("Weekly menu created ✅");
       await fetchMenu();
+      setSubmiting(false);
 
       setForm({
         weekStart: "",
@@ -171,6 +176,7 @@ const AdminPage = () => {
 
   const saveEdits = async () => {
     try {
+      setSubmiting(true);
       const payload = {
         ...editForm,
         weekStart: toISO(editForm.weekStart),
@@ -187,6 +193,7 @@ const AdminPage = () => {
       toast.success("Menu updated ✅");
       setIsEditing(false);
       fetchMenu();
+      setSubmiting(false);
     } catch {
       toast.error("Failed to update menu");
     }
@@ -215,6 +222,7 @@ const AdminPage = () => {
   const deleteMenu = async () => {
     const firstConfirm = window.confirm("Delete entire weekly menu?");
     if (!firstConfirm) return;
+    setSubmiting(true);
 
     const downloadOrders = window.confirm(
       "Do you want to download all orders before deleting?",
@@ -247,6 +255,7 @@ const AdminPage = () => {
 
     setWeeklyMenu(null);
     setIsEditing(false);
+    setSubmiting(false);
   };
 
   if (loading) return <Loader />;
@@ -308,6 +317,19 @@ const AdminPage = () => {
                     )
                   }
                 />
+                <input
+                  className="border p-2 flex-1"
+                  placeholder="Грамаж"
+                  value={meal.weight}
+                  onChange={(e) =>
+                    handleMealChange(
+                      dayIndex,
+                      mealIndex,
+                      "weight",
+                      e.target.value,
+                    )
+                  }
+                />
                 <div className="flex items-center gap-1">
                   <input
                     type="number"
@@ -345,8 +367,17 @@ const AdminPage = () => {
           </div>
         ))}
 
-        <ShinyButton href="#" className="p-2" onClick={handleSubmit}>
-          Създай
+        <ShinyButton
+          href="#"
+          disabled={submiting}
+          className="p-2"
+          onClick={handleSubmit}
+        >
+          {submiting ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <span>Създай</span>
+          )}
         </ShinyButton>
       </div>
 
@@ -360,8 +391,16 @@ const AdminPage = () => {
                   ✏️ Редактирай
                 </Button>
               )}
-              <Button variant="destructive" onClick={deleteMenu}>
-                Изтрий
+              <Button
+                variant="destructive"
+                disabled={submiting}
+                onClick={deleteMenu}
+              >
+                {submiting ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <span>Изтрий</span>
+                )}
               </Button>
             </div>
           </div>
@@ -416,6 +455,20 @@ const AdminPage = () => {
                           )
                         }
                       />
+                      <input
+                        className="border p-2 flex-1"
+                        placeholder="Грамаж"
+                        value={meal.weight}
+                        onChange={(e) =>
+                          handleMealChange(
+                            dayIndex,
+                            mealIndex,
+                            "weight",
+                            e.target.value,
+                          )
+                        }
+                      />
+
                       <div className="flex items-center gap-1">
                         <input
                           type="number"
@@ -453,7 +506,13 @@ const AdminPage = () => {
               ))}
 
               <div className="flex gap-4">
-                <Button onClick={saveEdits}>Запази промените</Button>
+                <ShinyButton href="#" onClick={saveEdits}>
+                  {submiting ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <span>Запази промените</span>
+                  )}
+                </ShinyButton>
                 <Button variant="outline" onClick={cancelEditing}>
                   Откажи
                 </Button>

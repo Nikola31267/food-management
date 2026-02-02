@@ -14,6 +14,7 @@ const Dashboard = () => {
   const [user, setUser] = useState(null);
   const [hasOrdered, setHasOrdered] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [submiting, setSubmiting] = useState(false);
 
   const [menu, setMenu] = useState(null);
   const [weeklyOrder, setWeeklyOrder] = useState({});
@@ -145,6 +146,7 @@ const Dashboard = () => {
 
   const submitWeeklyOrder = async () => {
     if (hasOrdered || menuExpired) return;
+    setSubmiting(true);
 
     try {
       await axiosInstance.post(
@@ -176,6 +178,7 @@ const Dashboard = () => {
       setWeeklyOrder({});
 
       toast.success("Поръчката е изпратена!");
+      setSubmiting(false);
     } catch (err) {
       const message = err.response?.data?.error || "Failed to submit order";
       toast.error(message);
@@ -297,6 +300,7 @@ const Dashboard = () => {
                       day.meals.map((meal) => (
                         <tr key={meal._id} className="border-t">
                           <td className="p-2">{meal.name}</td>
+                          <td className="p-2">{meal.weight}</td>
                           <td className="p-2">€{meal.price}</td>
                           <td className="p-2 text-center">
                             <button
@@ -353,7 +357,13 @@ const Dashboard = () => {
               }).format(totalPrice)}
             </span>
           </p>
-          <Button onClick={submitWeeklyOrder}>Поръчай</Button>
+          <ShinyButton
+            href="#"
+            disabled={submiting}
+            onClick={submitWeeklyOrder}
+          >
+            Поръчай
+          </ShinyButton>
         </div>
       )}
 
