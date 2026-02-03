@@ -9,6 +9,7 @@ import Navbar from "@/components/admin/Navbar";
 import { ShinyButton } from "@/components/ui/shiny-button";
 import { toast } from "react-toastify";
 import { Loader2 } from "lucide-react";
+import axios from "axios";
 
 const DAYS = ["Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък"];
 
@@ -24,7 +25,7 @@ const AdminPage = () => {
     const fetchUserProfile = async () => {
       if (localStorage.getItem("data-traffic-auth")) {
         try {
-          const response = await axiosInstance.get("/auth/user", {
+          const response = await axios.get("/api/auth/user", {
             headers: {
               "x-auth-token": localStorage.getItem("data-traffic-auth"),
             },
@@ -87,7 +88,7 @@ const AdminPage = () => {
         const token = localStorage.getItem("data-traffic-auth");
         if (!token) return router.push("/sign-in");
 
-        const user = await axiosInstance.get("/auth/user", {
+        const user = await axios.get("/api/auth/user", {
           headers: { "x-auth-token": token },
         });
 
@@ -106,7 +107,7 @@ const AdminPage = () => {
   }, [router]);
 
   const fetchMenu = async () => {
-    const res = await axiosInstance.get("/menu");
+    const res = await axios.get("/api/menu");
     setWeeklyMenu(res.data?.days ? res.data : null);
   };
 
@@ -137,7 +138,7 @@ const AdminPage = () => {
     setSubmiting(true);
 
     try {
-      await axiosInstance.post("/menu", form, {
+      await axios.post("/api/menu", form, {
         headers: {
           "x-auth-token": localStorage.getItem("data-traffic-auth"),
         },
@@ -184,7 +185,7 @@ const AdminPage = () => {
         orderDeadline: toISO(editForm.orderDeadline),
       };
 
-      await axiosInstance.put(`/menu/${weeklyMenu._id}`, payload, {
+      await axios.put(`/api/menu/${weeklyMenu._id}`, payload, {
         headers: {
           "x-auth-token": localStorage.getItem("data-traffic-auth"),
         },
@@ -228,8 +229,8 @@ const AdminPage = () => {
       "Искате ли да свалите всички стари поръчки преди изтриване?",
     );
 
-    const response = await axiosInstance.delete(
-      `/menu/${weeklyMenu._id}?download=${downloadOrders}`,
+    const response = await axios.delete(
+      `/api/menu/${weeklyMenu._id}?download=${downloadOrders}`,
       {
         headers: {
           "x-auth-token": localStorage.getItem("data-traffic-auth"),

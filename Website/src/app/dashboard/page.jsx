@@ -6,9 +6,9 @@ import Loader from "@/components/layout/Loader";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { ShinyButton } from "@/components/ui/shiny-button";
 import { toast } from "react-toastify";
+import axios from "axios";
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
@@ -32,7 +32,7 @@ const Dashboard = () => {
         const token = localStorage.getItem("data-traffic-auth");
         if (!token) return router.push("/sign-in");
 
-        const userRes = await axiosInstance.get("/auth/user", {
+        const userRes = await axios.get("/api/auth/user", {
           headers: { "x-auth-token": token },
         });
 
@@ -62,7 +62,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchMenu = async () => {
       try {
-        const res = await axiosInstance.get("/menu");
+        const res = await axios.get("/api/menu");
         setMenu(res.data);
       } catch (err) {
         console.error(err);
@@ -163,8 +163,8 @@ const Dashboard = () => {
     setSubmiting(true);
 
     try {
-      await axiosInstance.post(
-        "/order",
+      await axios.post(
+        "/api/order",
         { weeklyOrder, totalPrice },
         {
           headers: {

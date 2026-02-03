@@ -5,6 +5,7 @@ import { axiosInstance } from "@/lib/axios";
 import { useRouter } from "next/navigation";
 import Loader from "@/components/layout/Loader";
 import SignInCard from "@/components/auth/SignInCard";
+import axios from "axios";
 
 export default function Login() {
   const [error, setError] = useState(null);
@@ -27,7 +28,7 @@ export default function Login() {
     const token = credentialResponse.credential;
 
     try {
-      const response = await axiosInstance.post("/auth/google-signin", {
+      const response = await axios.post("/api/auth/google-signin", {
         token,
       });
       localStorage.setItem("data-traffic-auth", response.data.token);

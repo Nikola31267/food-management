@@ -8,6 +8,7 @@ import Navbar from "@/components/admin/Navbar";
 import { ShinyButton } from "@/components/ui/shiny-button";
 import { Loader2, Trash } from "lucide-react";
 import { toast } from "react-toastify";
+import axios from "axios";
 
 const AdminOrdersPage = () => {
   const [ordersData, setOrdersData] = useState([]);
@@ -25,7 +26,7 @@ const AdminOrdersPage = () => {
     const fetchUserProfile = async () => {
       if (localStorage.getItem("data-traffic-auth")) {
         try {
-          const response = await axiosInstance.get("/auth/user", {
+          const response = await axios.get("/api/auth/user", {
             headers: {
               "x-auth-token": localStorage.getItem("data-traffic-auth"),
             },
@@ -106,7 +107,7 @@ const AdminOrdersPage = () => {
 
   const fetchOrders = async () => {
     try {
-      const res = await axiosInstance.get("/admin/orders", {
+      const res = await axios.get("/api/orders", {
         headers: { "x-auth-token": localStorage.getItem("data-traffic-auth") },
       });
       setOrdersData(res.data);
@@ -125,8 +126,8 @@ const AdminOrdersPage = () => {
   const markAsPaid = async (userId, orderId) => {
     try {
       setSubmiting(true);
-      await axiosInstance.put(
-        `/admin/orders/paid/${userId}/${orderId}`,
+      await axios.put(
+        `/api/orders/paid/${userId}/${orderId}`,
         {},
         {
           headers: {
@@ -148,7 +149,7 @@ const AdminOrdersPage = () => {
     setSubmiting(true);
 
     try {
-      await axiosInstance.delete(`/admin/orders/${userId}/${orderId}`, {
+      await axios.delete(`/api/orders/${userId}/${orderId}`, {
         headers: {
           "x-auth-token": localStorage.getItem("data-traffic-auth"),
         },

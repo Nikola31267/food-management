@@ -40,4 +40,7 @@ const weeklyMenuSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-export default mongoose.model("WeeklyMenu", weeklyMenuSchema);
+const WeeklyMenu =
+  mongoose.models.WeeklyMenu || mongoose.model("WeeklyMenu", weeklyMenuSchema);
+
+export default WeeklyMenu;

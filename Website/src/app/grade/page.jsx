@@ -16,6 +16,7 @@ import Loader from "@/components/layout/Loader";
 import { ChevronRight } from "lucide-react";
 import { ShinyButton } from "@/components/ui/shiny-button";
 import { toast } from "react-toastify";
+import axios from "axios";
 
 const CLASSES = {
   8: ["8а", "8б", "8в"],
@@ -40,7 +41,7 @@ export default function DropdownMenuBasic() {
       }
 
       try {
-        const response = await axiosInstance.get("/auth/user", {
+        const response = await axios.get("/api/auth/user", {
           headers: {
             "x-auth-token": localStorage.getItem("data-traffic-auth"),
           },
@@ -70,8 +71,8 @@ export default function DropdownMenuBasic() {
     try {
       setLoading(true);
 
-      await axiosInstance.put(
-        "/auth/grade",
+      await axios.put(
+        "/api/auth/grade",
         { grade: selectedGrade },
         {
           headers: {

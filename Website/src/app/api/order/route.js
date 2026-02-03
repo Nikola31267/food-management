@@ -1,34 +1,47 @@
-import express from "express";
-import User from "../models/User.js";
-const router = express.Router();
-import { verifyToken } from "../middleware/auth.js";
-import dotenv from "dotenv";
+import { NextResponse } from "next/server";
+import { connectDB } from "@/lib/connectDB";
+import { verifyToken } from "@/lib/auth";
+import User from "@/models/User";
+import WeeklyMenu from "@/models/Menu";
 
-import WeeklyMenu from "../models/Menu.js";
+export async function POST(req) {
+  await connectDB();
 
-dotenv.config();
-
-router.post("/", verifyToken, async (req, res) => {
   try {
-    const userId = req.user.id;
-    const { weeklyOrder } = req.body;
+    const decoded = verifyToken(req);
+    const userId = decoded.id;
+
+    const { weeklyOrder } = await req.json();
 
     const user = await User.findById(userId);
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
     const menu = await WeeklyMenu.findOne().sort({ createdAt: -1 });
-    if (!menu) return res.status(400).json({ error: "No active menu" });
+
+    if (!menu) {
+      return NextResponse.json({ error: "No active menu" }, { status: 400 });
+    }
 
     const now = new Date();
-    if (now > menu.orderDeadline)
-      return res.status(403).json({ error: "Ordering deadline has passed" });
+    if (now > menu.orderDeadline) {
+      return NextResponse.json(
+        { error: "Ordering deadline has passed" },
+        { status: 403 },
+      );
+    }
 
     const existingOrder = user.orders.find(
       (order) => order.menuId?.toString() === menu._id.toString(),
     );
-    if (existingOrder)
-      return res
-        .status(400)
-        .json({ error: "User has already submitted an order" });
+
+    if (existingOrder) {
+      return NextResponse.json(
+        { error: "User has already submitted an order" },
+        { status: 400 },
+      );
+    }
 
     const weeklyOrderObj = {
       menuId: menu._id,
@@ -61,22 +74,28 @@ router.post("/", verifyToken, async (req, res) => {
         (sum, m) => sum + m.price * m.quantity,
         0,
       );
+
       weeklyOrderObj.totalPrice += dayTotal;
 
-      weeklyOrderObj.days.push({ day, meals: dayMeals });
+      weeklyOrderObj.days.push({
+        day,
+        meals: dayMeals,
+      });
     }
 
     user.orders.push(weeklyOrderObj);
     await user.save();
 
-    res.status(200).json({
+    return NextResponse.json({
       message: "Order saved successfully",
       totalPrice: weeklyOrderObj.totalPrice,
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to save order" });
-  }
-});
 
-export default router;
+    return NextResponse.json(
+      { error: "Failed to save order" },
+      { status: 500 },
+    );
+  }
+}
