@@ -85,6 +85,20 @@ const Dashboard = () => {
   const addMealToOrder = (day, meal) => {
     if (hasOrdered || menuExpired) return;
 
+    const dayMeals = weeklyOrder[day] || [];
+    const existing = dayMeals.find((m) => m.mealId === meal._id);
+
+    // 👉 Toast OUTSIDE state update
+    if (existing) {
+      toast.info(`Добавено още 1 × ${meal.name}`, {
+        toastId: `${meal._id}-increase`,
+      });
+    } else {
+      toast.success(`${meal.name} е добавено към поръчката!`, {
+        toastId: meal._id,
+      });
+    }
+
     setWeeklyOrder((prev) => {
       const dayMeals = prev[day] || [];
       const existing = dayMeals.find((m) => m.mealId === meal._id);
