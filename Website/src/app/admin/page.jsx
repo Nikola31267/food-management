@@ -143,7 +143,7 @@ const AdminPage = () => {
         },
       });
 
-      toast.success("Weekly menu created ✅");
+      toast.success("Менюто е създадено!");
       await fetchMenu();
       setSubmiting(false);
 
@@ -190,7 +190,7 @@ const AdminPage = () => {
         },
       });
 
-      toast.success("Menu updated ✅");
+      toast.success("Менюто е редактирано!");
       setIsEditing(false);
       fetchMenu();
       setSubmiting(false);
@@ -220,12 +220,12 @@ const AdminPage = () => {
   const formatDate = (date) => new Date(date).toISOString().split("T")[0];
 
   const deleteMenu = async () => {
-    const firstConfirm = window.confirm("Delete entire weekly menu?");
+    const firstConfirm = window.confirm("Изтрийте цялото седмично меню?");
     if (!firstConfirm) return;
     setSubmiting(true);
 
     const downloadOrders = window.confirm(
-      "Do you want to download all orders before deleting?",
+      "Искате ли да свалите всички стари поръчки преди изтриване?",
     );
 
     const response = await axiosInstance.delete(

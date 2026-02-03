@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { axiosInstance } from "@/lib/axios";
 import Loader from "@/components/layout/Loader";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/admin/Navbar";
 import { ShinyButton } from "@/components/ui/shiny-button";
@@ -137,7 +136,7 @@ const AdminOrdersPage = () => {
   };
 
   const deleteOrder = async (userId, orderId) => {
-    if (!confirm("Are you sure you want to delete this order?")) return;
+    if (!confirm("Сигурни ли сте, че искате да изтриете тази поръчка?")) return;
     setSubmiting(true);
 
     try {

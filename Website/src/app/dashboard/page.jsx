@@ -74,7 +74,7 @@ const Dashboard = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("data-traffic-auth");
-    window.location.href = "/sign-in?logged_out=true";
+    window.location.reload();
   };
 
   const getOrderedDay = (dayName) => {
