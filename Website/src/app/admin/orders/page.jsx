@@ -15,6 +15,10 @@ const AdminOrdersPage = () => {
   const [error, setError] = useState("");
   const [user, setUser] = useState("");
   const [submiting, setSubmiting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedClass, setSelectedClass] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ordersPerPage = 5;
   const router = useRouter();
 
   useEffect(() => {
@@ -45,6 +49,10 @@ const AdminOrdersPage = () => {
 
     fetchUserProfile();
   }, [router]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedClass]);
 
   const downloadFoodByClassCSV = () => {
     const classFoodMap = {};
@@ -154,6 +162,25 @@ const AdminOrdersPage = () => {
     }
   };
 
+  const classes = [...new Set(ordersData.map((user) => user.grade))];
+
+  const filteredOrders = ordersData.filter((user) => {
+    const matchesName = user.fullName
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+
+    const matchesClass = selectedClass ? user.grade === selectedClass : true;
+
+    return matchesName && matchesClass;
+  });
+
+  const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
+
+  const paginatedOrders = filteredOrders.slice(
+    (currentPage - 1) * ordersPerPage,
+    currentPage * ordersPerPage,
+  );
+
   if (loading) return <Loader />;
 
   return (
@@ -161,6 +188,27 @@ const AdminOrdersPage = () => {
       <Navbar user={user} />
       <div className="p-8 min-h-screen bg-gray-50">
         <h1 className="text-3xl font-bold mb-6">Поръчки</h1>
+
+        <input
+          type="text"
+          placeholder="Търси по име..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="mb-4 p-3 border rounded-full w-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
+        />
+
+        <select
+          value={selectedClass}
+          onChange={(e) => setSelectedClass(e.target.value)}
+          className="p-3 border rounded-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
+        >
+          <option value="">Всички класове</option>
+          {classes.map((grade) => (
+            <option key={grade} value={grade}>
+              {grade}
+            </option>
+          ))}
+        </select>
 
         {ordersData.length !== 0 && (
           <ShinyButton
@@ -174,8 +222,8 @@ const AdminOrdersPage = () => {
 
         {error && <p className="text-red-500 mb-4">{error}</p>}
 
-        {ordersData.length === 0 ? (
-          <p>Няма поръчки.</p>
+        {filteredOrders.length === 0 ? (
+          <p>Няма намерени ученици.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full border-collapse border">
@@ -190,7 +238,7 @@ const AdminOrdersPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {ordersData.map((user) =>
+                {paginatedOrders.map((user) =>
                   user.orders.map((week) => (
                     <tr key={`${user._id}-${week._id}`} className="border-b">
                       <td className="border p-2">{user.fullName}</td>
@@ -257,6 +305,29 @@ const AdminOrdersPage = () => {
                 )}
               </tbody>
             </table>
+            <div className="flex justify-center items-center gap-4 mt-6">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 border rounded-lg disabled:opacity-50"
+              >
+                Previous
+              </button>
+
+              <span className="font-semibold">
+                Page {currentPage} of {totalPages || 1}
+              </span>
+
+              <button
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(p + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 border rounded-lg disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>
