@@ -342,7 +342,7 @@ const AdminPage = () => {
                         days: addMeal(prev.days, dayIndex),
                       }))
                     }
-                    className="hover:border-[#478BAF] hover:bg-white transition-colors duration-300 hover:bg-gray-50"
+                    className="hover:border-[#478BAF] transition-colors duration-300 hover:bg-gray-50"
                   >
                     + Добави ястие
                   </Button>
