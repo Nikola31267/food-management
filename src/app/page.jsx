@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { axiosInstance } from "@/lib/axios";
 import Loader from "@/components/layout/Loader";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -14,7 +15,7 @@ export default function Home() {
     const fetchUserProfile = async () => {
       if (localStorage.getItem("data-auth-eduiteh-food")) {
         try {
-          const response = await axiosInstance.get("/auth/user", {
+          const response = await axios.get("/api/auth/user", {
             headers: {
               "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
             },

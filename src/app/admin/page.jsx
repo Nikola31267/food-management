@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { axiosInstance } from "@/lib/axios";
+import { useEffect, useMemo, useState } from "react";
+import * as XLSX from "xlsx";
+import axios from "axios";
 import Loader from "@/components/layout/Loader";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -9,46 +10,31 @@ import Navbar from "@/components/admin/Navbar";
 import { ShinyButton } from "@/components/ui/shiny-button";
 import { toast } from "react-toastify";
 import { Loader2 } from "lucide-react";
-import axios from "axios";
+import {
+  formatDateForInput,
+  formatDateTimeForInput,
+  toISO,
+  addMeal,
+  removeMeal,
+  handleMealChange,
+  addEditMeal,
+  removeEditMeal,
+  handleEditMealChange,
+  formatDate,
+} from "@/lib/helpers";
+import { parseMenuFromRows } from "@/lib/excell-read-functions";
 
 const DAYS = ["Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък"];
 
 const AdminPage = () => {
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [user, setUser] = useState("");
   const [weeklyMenu, setWeeklyMenu] = useState(null);
   const [submiting, setSubmiting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState(null);
+
   const router = useRouter();
-
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (localStorage.getItem("data-auth-eduiteh-food")) {
-        try {
-          const response = await axios.get("/api/auth/user", {
-            headers: {
-              "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
-            },
-          });
-          if (response.data.role != "admin") {
-            router.push("/dashboard");
-          }
-          setUser(response.data);
-        } catch (error) {
-          setError("Error fetching user profile");
-          console.error(error);
-        } finally {
-          setLoading(false);
-        }
-      } else {
-        setLoading(false);
-        setUser(null);
-        router.push("/sign-in");
-      }
-    };
-
-    fetchUserProfile();
-  }, [router]);
 
   const [form, setForm] = useState({
     weekStart: "",
@@ -57,46 +43,22 @@ const AdminPage = () => {
     days: DAYS.map((d) => ({ day: d, meals: [] })),
   });
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState(null);
-
-  const formatDateForInput = (isoDate) => {
-    if (!isoDate) return "";
-    const d = new Date(isoDate);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
-
-  const formatDateTimeForInput = (isoDate) => {
-    if (!isoDate) return "";
-    const d = new Date(isoDate);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    const hours = String(d.getHours()).padStart(2, "0");
-    const minutes = String(d.getMinutes()).padStart(2, "0");
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  };
-
-  const toISO = (localDate) => new Date(localDate).toISOString();
-
   useEffect(() => {
     const init = async () => {
       try {
         const token = localStorage.getItem("data-auth-eduiteh-food");
         if (!token) return router.push("/sign-in");
 
-        const user = await axios.get("/api/auth/user", {
+        const userRes = await axios.get("/api/auth/user", {
           headers: { "x-auth-token": token },
         });
 
-        if (user.data.role !== "admin") {
+        if (userRes.data.role !== "admin") {
           router.push("/dashboard");
           return;
         }
 
+        setUser(userRes.data);
         await fetchMenu();
       } finally {
         setLoading(false);
@@ -106,27 +68,53 @@ const AdminPage = () => {
     init();
   }, [router]);
 
+  const hasAnyMeals = useMemo(
+    () => form.days.some((d) => d.meals && d.meals.length > 0),
+    [form.days],
+  );
+
   const fetchMenu = async () => {
     const res = await axios.get("/api/menu");
     setWeeklyMenu(res.data?.days ? res.data : null);
   };
 
-  const addMeal = (dayIndex) => {
-    const copy = [...form.days];
-    copy[dayIndex].meals.push({ name: "", price: "" });
-    setForm({ ...form, days: copy });
-  };
+  const onFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  const removeMeal = (dayIndex, mealIndex) => {
-    const copy = [...form.days];
-    copy[dayIndex].meals.splice(mealIndex, 1);
-    setForm({ ...form, days: copy });
-  };
+    if (!file.name.toLowerCase().endsWith(".xlsx")) {
+      toast.error("Please upload an .xlsx file.");
+      return;
+    }
 
-  const handleMealChange = (dayIndex, mealIndex, field, value) => {
-    const copy = [...form.days];
-    copy[dayIndex].meals[mealIndex][field] = value;
-    setForm({ ...form, days: copy });
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: "array" });
+      const firstSheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[firstSheetName];
+
+      const rows = XLSX.utils.sheet_to_json(sheet, {
+        header: 1,
+        defval: null,
+        blankrows: false,
+      });
+
+      const parsed = parseMenuFromRows(rows).map((d) => ({
+        day: d.day,
+        meals: d.meals.map((m) => ({
+          id: crypto.randomUUID(),
+          name: m.name,
+          weight: m.weight,
+          price: m.price == null ? "" : String(m.price),
+        })),
+      }));
+
+      setForm((prev) => ({ ...prev, days: parsed }));
+      toast.success("Менюто е заредено от Excel ✅");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to read XLSX file.");
+    }
   };
 
   const handleSubmit = async () => {
@@ -134,11 +122,33 @@ const AdminPage = () => {
       toast.error("Please set an order deadline");
       return;
     }
+    if (!hasAnyMeals) {
+      toast.error("Добавете поне едно ястие");
+      return;
+    }
+
+    const payload = {
+      weekStart: toISO(form.weekStart),
+      weekEnd: toISO(form.weekEnd),
+      orderDeadline: toISO(form.orderDeadline),
+      days: form.days.map((d) => ({
+        day: d.day,
+        meals: (d.meals || [])
+          .filter((m) => String(m.name || "").trim())
+          .map((m) => ({
+            name: String(m.name || "").trim(),
+            weight: String(m.weight || "").trim(),
+            price:
+              m.price === "" || m.price == null
+                ? null
+                : Number(String(m.price).replace(",", ".")),
+          })),
+      })),
+    };
 
     setSubmiting(true);
-
     try {
-      await axios.post("/api/menu", form, {
+      await axios.post("/api/menu", payload, {
         headers: {
           "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
         },
@@ -146,7 +156,6 @@ const AdminPage = () => {
 
       toast.success("Менюто е създадено!");
       await fetchMenu();
-      setSubmiting(false);
 
       setForm({
         weekStart: "",
@@ -154,17 +163,27 @@ const AdminPage = () => {
         orderDeadline: "",
         days: DAYS.map((d) => ({ day: d, meals: [] })),
       });
-    } catch {
-      toast.error("Failed to save menu");
+    } catch (e) {
+      console.error(e);
+      toast.error(e?.response?.data?.message || "Failed to save menu");
+    } finally {
+      setSubmiting(false);
     }
   };
 
   const startEditing = () => {
     const copy = JSON.parse(JSON.stringify(weeklyMenu));
-
     copy.weekStart = formatDateForInput(copy.weekStart);
     copy.weekEnd = formatDateForInput(copy.weekEnd);
     copy.orderDeadline = formatDateTimeForInput(copy.orderDeadline);
+
+    copy.days = copy.days.map((d) => ({
+      ...d,
+      meals: (d.meals || []).map((m) => ({
+        ...m,
+        id: m.id || crypto.randomUUID(),
+      })),
+    }));
 
     setEditForm(copy);
     setIsEditing(true);
@@ -178,11 +197,25 @@ const AdminPage = () => {
   const saveEdits = async () => {
     try {
       setSubmiting(true);
+
       const payload = {
         ...editForm,
         weekStart: toISO(editForm.weekStart),
         weekEnd: toISO(editForm.weekEnd),
         orderDeadline: toISO(editForm.orderDeadline),
+        days: editForm.days.map((d) => ({
+          day: d.day,
+          meals: (d.meals || [])
+            .filter((m) => String(m.name || "").trim())
+            .map((m) => ({
+              name: String(m.name || "").trim(),
+              weight: String(m.weight || "").trim(),
+              price:
+                m.price === "" || m.price == null
+                  ? null
+                  : Number(String(m.price).replace(",", ".")),
+            })),
+        })),
       };
 
       await axios.put(`/api/menu/${weeklyMenu._id}`, payload, {
@@ -193,33 +226,14 @@ const AdminPage = () => {
 
       toast.success("Менюто е редактирано!");
       setIsEditing(false);
-      fetchMenu();
+      await fetchMenu();
+    } catch (e) {
+      console.error(e);
+      toast.error(e?.response?.data?.message || "Failed to update menu");
+    } finally {
       setSubmiting(false);
-    } catch {
-      toast.error("Failed to update menu");
     }
   };
-
-  const addEditMeal = (dayIndex) => {
-    const copy = [...editForm.days];
-    copy[dayIndex].meals.push({ name: "", price: "" });
-    setEditForm({ ...editForm, days: copy });
-  };
-
-  const removeEditMeal = (dayIndex, mealIndex) => {
-    const copy = [...editForm.days];
-    copy[dayIndex].meals.splice(mealIndex, 1);
-    setEditForm({ ...editForm, days: copy });
-  };
-
-  const handleEditMealChange = (dayIndex, mealIndex, field, value) => {
-    const copy = [...editForm.days];
-    copy[dayIndex].meals[mealIndex][field] = value;
-    setEditForm({ ...editForm, days: copy });
-  };
-
-  const formatDate = (date) => new Date(date).toISOString().split("T")[0];
-
   const deleteMenu = async () => {
     const firstConfirm = window.confirm("Изтрийте цялото седмично меню?");
     if (!firstConfirm) return;
@@ -258,43 +272,57 @@ const AdminPage = () => {
     setIsEditing(false);
     setSubmiting(false);
   };
-
   if (loading) return <Loader />;
 
   return (
     <>
       <Navbar user={user} />
-      <div className="p-6 max-w-4xl mx-auto space-y-12 bg-gray-50 rounded-lg">
-        <h2 className="text-xl font-semibold">Създай седмично меню</h2>
-        <div className="border rounded-lg p-6 space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1">
-              <h3 className="font-bold">От:</h3>
+
+      <div className="mx-auto max-w-5xl p-6 space-y-12">
+        {/* CREATE */}
+        <div className="rounded-xl border bg-white p-6 space-y-6 shadow-sm">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-xl font-semibold">Създай седмично меню</h2>
+
+            <label className="inline-flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer">
+              <span className="font-medium">Upload .xlsx</span>
+              <input
+                type="file"
+                accept=".xlsx"
+                onChange={onFileChange}
+                className="hidden"
+              />
+            </label>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
+              <p className="font-semibold">От:</p>
               <input
                 type="date"
-                className="border p-2"
+                className="w-full rounded-lg border px-3 py-2"
                 value={form.weekStart}
                 onChange={(e) =>
                   setForm({ ...form, weekStart: e.target.value })
                 }
               />
             </div>
-            <div className="flex flex-col gap-1">
-              <h3 className="font-bold">До:</h3>
+            <div className="space-y-1">
+              <p className="font-semibold">До:</p>
               <input
                 type="date"
-                className="border p-2"
+                className="w-full rounded-lg border px-3 py-2"
                 value={form.weekEnd}
                 onChange={(e) => setForm({ ...form, weekEnd: e.target.value })}
               />
             </div>
           </div>
-          <div className="flex flex-col gap-1">
-            <h3 className="font-bold">Последен ден за поръчка:</h3>
 
+          <div className="space-y-1">
+            <p className="font-semibold">Последен ден за поръчка:</p>
             <input
               type="datetime-local"
-              className="border p-2 w-full"
+              className="w-full rounded-lg border px-3 py-2"
               value={form.orderDeadline}
               onChange={(e) =>
                 setForm({ ...form, orderDeadline: e.target.value })
@@ -302,73 +330,81 @@ const AdminPage = () => {
             />
           </div>
 
-          {form.days.map((day, dayIndex) => (
-            <div key={day.day} className="border p-4 rounded">
-              <h3 className="font-bold">{day.day}</h3>
-              {day.meals.map((meal, mealIndex) => (
-                <div key={mealIndex} className="flex gap-2 mt-2 items-center">
-                  <input
-                    className="border p-2 flex-1"
-                    placeholder="Име на ястието"
-                    value={meal.name}
-                    onChange={(e) =>
-                      handleMealChange(
-                        dayIndex,
-                        mealIndex,
-                        "name",
-                        e.target.value,
-                      )
-                    }
-                  />
-                  <input
-                    className="border p-2 flex-1"
-                    placeholder="Грамаж"
-                    value={meal.weight}
-                    onChange={(e) =>
-                      handleMealChange(
-                        dayIndex,
-                        mealIndex,
-                        "weight",
-                        e.target.value,
-                      )
-                    }
-                  />
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="number"
-                      className="border p-2 w-24"
-                      placeholder="Цена"
-                      value={meal.price}
-                      onChange={(e) =>
-                        handleMealChange(
-                          dayIndex,
-                          mealIndex,
-                          "price",
-                          e.target.value,
-                        )
-                      }
-                    />
-                    <p>€</p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => removeMeal(dayIndex, mealIndex)}
-                    className="ml-4"
-                  >
-                    −
+          <div className="space-y-4">
+            {form.days.map((day, dayIndex) => (
+              <div key={day.day} className="rounded-xl border p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold">{day.day}</h3>
+                  <Button variant="outline" onClick={() => addMeal(dayIndex)}>
+                    + Добави ястие
                   </Button>
                 </div>
-              ))}
 
-              <Button
-                variant="outline"
-                className="mt-2"
-                onClick={() => addMeal(dayIndex)}
-              >
-                + Добави ястие
-              </Button>
-            </div>
-          ))}
+                <div className="mt-3 space-y-2">
+                  {day.meals.map((meal) => (
+                    <div
+                      key={meal.id}
+                      className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_180px_140px_auto] sm:items-center"
+                    >
+                      <input
+                        className="w-full rounded-lg border px-3 py-2"
+                        placeholder="Име на ястието"
+                        value={meal.name}
+                        onChange={(e) =>
+                          handleMealChange(
+                            dayIndex,
+                            meal.id,
+                            "name",
+                            e.target.value,
+                          )
+                        }
+                      />
+
+                      <input
+                        className="w-full rounded-lg border px-3 py-2"
+                        placeholder="Грамаж (напр. 250гр / 1фил)"
+                        value={meal.weight}
+                        onChange={(e) =>
+                          handleMealChange(
+                            dayIndex,
+                            meal.id,
+                            "weight",
+                            e.target.value,
+                          )
+                        }
+                      />
+
+                      <div className="flex items-center gap-2">
+                        <input
+                          inputMode="decimal"
+                          className="w-full rounded-lg border px-3 py-2"
+                          placeholder="Цена"
+                          value={meal.price}
+                          onChange={(e) =>
+                            handleMealChange(
+                              dayIndex,
+                              meal.id,
+                              "price",
+                              e.target.value,
+                            )
+                          }
+                        />
+                        <span className="text-sm text-gray-600">€</span>
+                      </div>
+
+                      <Button
+                        variant="outline"
+                        onClick={() => removeMeal(dayIndex, meal.id)}
+                        className="justify-self-start sm:justify-self-end"
+                      >
+                        −
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
 
           <ShinyButton
             href="#"
@@ -384,9 +420,10 @@ const AdminPage = () => {
           </ShinyButton>
         </div>
 
+        {/* CURRENT MENU */}
         {weeklyMenu && (
-          <div className="border rounded-lg p-6 space-y-4">
-            <div className="flex justify-between items-center">
+          <div className="rounded-xl border bg-white p-6 space-y-4 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
               <h2 className="text-xl font-semibold">Сегашно меню</h2>
               <div className="flex gap-2">
                 {!isEditing && (
@@ -410,10 +447,10 @@ const AdminPage = () => {
 
             {isEditing ? (
               <>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <input
                     type="date"
-                    className="border p-2"
+                    className="w-full rounded-lg border px-3 py-2"
                     value={editForm.weekStart}
                     onChange={(e) =>
                       setEditForm({ ...editForm, weekStart: e.target.value })
@@ -421,7 +458,7 @@ const AdminPage = () => {
                   />
                   <input
                     type="date"
-                    className="border p-2"
+                    className="w-full rounded-lg border px-3 py-2"
                     value={editForm.weekEnd}
                     onChange={(e) =>
                       setEditForm({ ...editForm, weekEnd: e.target.value })
@@ -431,84 +468,93 @@ const AdminPage = () => {
 
                 <input
                   type="datetime-local"
-                  className="border p-2 w-full"
+                  className="w-full rounded-lg border px-3 py-2"
                   value={editForm.orderDeadline}
                   onChange={(e) =>
                     setEditForm({ ...editForm, orderDeadline: e.target.value })
                   }
                 />
 
-                {editForm.days.map((day, dayIndex) => (
-                  <div key={day.day} className="border p-4 rounded">
-                    <h3 className="font-bold">{day.day}</h3>
-                    {day.meals.map((meal, mealIndex) => (
-                      <div
-                        key={mealIndex}
-                        className="flex gap-2 mt-2 items-center"
-                      >
-                        <input
-                          className="border p-2 flex-1"
-                          value={meal.name}
-                          onChange={(e) =>
-                            handleEditMealChange(
-                              dayIndex,
-                              mealIndex,
-                              "name",
-                              e.target.value,
-                            )
-                          }
-                        />
-                        <input
-                          className="border p-2 flex-1"
-                          placeholder="Грамаж"
-                          value={meal.weight}
-                          onChange={(e) =>
-                            handleMealChange(
-                              dayIndex,
-                              mealIndex,
-                              "weight",
-                              e.target.value,
-                            )
-                          }
-                        />
-
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="number"
-                            className="border p-2 w-24"
-                            value={meal.price}
-                            onChange={(e) =>
-                              handleEditMealChange(
-                                dayIndex,
-                                mealIndex,
-                                "price",
-                                e.target.value,
-                              )
-                            }
-                          />
-                          <p>€</p>
-                        </div>
+                <div className="space-y-4">
+                  {editForm.days.map((day, dayIndex) => (
+                    <div key={day.day} className="rounded-xl border p-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-bold">{day.day}</h3>
                         <Button
                           variant="outline"
-                          onClick={() => removeEditMeal(dayIndex, mealIndex)}
-                          className="ml-4"
+                          onClick={() => addEditMeal(dayIndex)}
                         >
-                          −
+                          + Добави ястие
                         </Button>
                       </div>
-                    ))}
 
-                    <Button
-                      variant="outline"
-                      className="mt-2"
-                      onClick={() => addEditMeal(dayIndex)}
-                    >
-                      + Добави ястие
-                    </Button>
-                  </div>
-                ))}
+                      <div className="mt-3 space-y-2">
+                        {day.meals.map((meal) => (
+                          <div
+                            key={meal.id}
+                            className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_180px_140px_auto] sm:items-center"
+                          >
+                            <input
+                              className="w-full rounded-lg border px-3 py-2"
+                              value={meal.name}
+                              onChange={(e) =>
+                                handleEditMealChange(
+                                  dayIndex,
+                                  meal.id,
+                                  "name",
+                                  e.target.value,
+                                )
+                              }
+                              placeholder="Име на ястието"
+                            />
 
-                <div className="flex gap-4">
+                            <input
+                              className="w-full rounded-lg border px-3 py-2"
+                              placeholder="Грамаж"
+                              value={meal.weight || ""}
+                              onChange={(e) =>
+                                handleEditMealChange(
+                                  dayIndex,
+                                  meal.id,
+                                  "weight",
+                                  e.target.value,
+                                )
+                              }
+                            />
+
+                            <div className="flex items-center gap-2">
+                              <input
+                                inputMode="decimal"
+                                className="w-full rounded-lg border px-3 py-2"
+                                value={meal.price ?? ""}
+                                onChange={(e) =>
+                                  handleEditMealChange(
+                                    dayIndex,
+                                    meal.id,
+                                    "price",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="Цена"
+                              />
+                              <span className="text-sm text-gray-600">€</span>
+                            </div>
+
+                            <Button
+                              variant="outline"
+                              onClick={() => removeEditMeal(dayIndex, meal.id)}
+                              className="justify-self-start sm:justify-self-end"
+                            >
+                              −
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap gap-4">
                   <ShinyButton href="#" onClick={saveEdits}>
                     {submiting ? (
                       <Loader2 className="animate-spin" />

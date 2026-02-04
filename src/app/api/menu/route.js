@@ -56,7 +56,7 @@ export async function GET() {
   await connectDB();
 
   try {
-    const menu = await WeeklyMenu.findOne().sort({ createdAt: -1 }).lean(); // faster
+    const menu = await WeeklyMenu.findOne().sort({ createdAt: -1 }).lean();
 
     return NextResponse.json(menu);
   } catch (err) {

@@ -319,8 +319,10 @@ const Dashboard = () => {
                           <td className="p-2 text-center">
                             <button
                               onClick={() => addMealToOrder(day.day, meal)}
+                              // className="bg-[#478BAF] text-white hover:bg-[#3a83ab] px-4 py-2 rounded-xl transition-colors duration-300"
+                              className="bg-gray-200 text-[#478BAF] hover:bg-gray-300 px-4 py-2 rounded-xl transition-colors duration-300 text-xl font-bold"
                             >
-                              ➕
+                              +
                             </button>
                           </td>
                         </tr>
@@ -337,13 +339,13 @@ const Dashboard = () => {
                         <button
                           onClick={() => decreaseQuantity(day.day, meal.mealId)}
                         >
-                          ➖
+                          -
                         </button>
                         <span>{meal.quantity}</span>
                         <button
                           onClick={() => increaseQuantity(day.day, meal.mealId)}
                         >
-                          ➕
+                          +
                         </button>
                         <span className="ml-auto">
                           €{meal.price * meal.quantity}

@@ -219,7 +219,7 @@ const AdminOrdersPage = () => {
             href="/"
             className="p-2 mb-2 mt-2"
           >
-            Експортирай поръчките
+            Изтегли поръчките
           </ShinyButton>
         )}
 
