@@ -23,11 +23,11 @@ const AdminPage = () => {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (localStorage.getItem("data-traffic-auth")) {
+      if (localStorage.getItem("data-auth-eduiteh-food")) {
         try {
           const response = await axios.get("/api/auth/user", {
             headers: {
-              "x-auth-token": localStorage.getItem("data-traffic-auth"),
+              "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
             },
           });
           if (response.data.role != "admin") {
@@ -85,7 +85,7 @@ const AdminPage = () => {
   useEffect(() => {
     const init = async () => {
       try {
-        const token = localStorage.getItem("data-traffic-auth");
+        const token = localStorage.getItem("data-auth-eduiteh-food");
         if (!token) return router.push("/sign-in");
 
         const user = await axios.get("/api/auth/user", {
@@ -140,7 +140,7 @@ const AdminPage = () => {
     try {
       await axios.post("/api/menu", form, {
         headers: {
-          "x-auth-token": localStorage.getItem("data-traffic-auth"),
+          "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
         },
       });
 
@@ -187,7 +187,7 @@ const AdminPage = () => {
 
       await axios.put(`/api/menu/${weeklyMenu._id}`, payload, {
         headers: {
-          "x-auth-token": localStorage.getItem("data-traffic-auth"),
+          "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
         },
       });
 
@@ -233,7 +233,7 @@ const AdminPage = () => {
       `/api/menu/${weeklyMenu._id}?download=${downloadOrders}`,
       {
         headers: {
-          "x-auth-token": localStorage.getItem("data-traffic-auth"),
+          "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
         },
         responseType: downloadOrders ? "blob" : "json",
       },

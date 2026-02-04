@@ -12,7 +12,7 @@ import { ShinyButton } from "../ui/shiny-button";
 export default function Navbar() {
   const signOut = () => {
     console.log("Signing out");
-    localStorage.removeItem("data-traffic-auth");
+    localStorage.removeItem("data-auth-eduiteh-food");
     window.location.href = "/sign-in";
   };
 

@@ -8,7 +8,7 @@ function SignedOut({ children }) {
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem("data-traffic-auth");
+    const token = localStorage.getItem("data-auth-eduiteh-food");
     if (token) {
       setProfile(true);
     }

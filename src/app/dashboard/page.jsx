@@ -29,7 +29,7 @@ const Dashboard = () => {
   useEffect(() => {
     const init = async () => {
       try {
-        const token = localStorage.getItem("data-traffic-auth");
+        const token = localStorage.getItem("data-auth-eduiteh-food");
         if (!token) return router.push("/sign-in");
 
         const userRes = await axios.get("/api/auth/user", {
@@ -73,7 +73,7 @@ const Dashboard = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("data-traffic-auth");
+    localStorage.removeItem("data-auth-eduiteh-food");
     window.location.reload();
   };
 
@@ -168,7 +168,7 @@ const Dashboard = () => {
         { weeklyOrder, totalPrice },
         {
           headers: {
-            "x-auth-token": localStorage.getItem("data-traffic-auth"),
+            "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
           },
         },
       );

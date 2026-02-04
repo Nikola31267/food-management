@@ -12,11 +12,11 @@ export default function Home() {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (localStorage.getItem("data-traffic-auth")) {
+      if (localStorage.getItem("data-auth-eduiteh-food")) {
         try {
           const response = await axiosInstance.get("/auth/user", {
             headers: {
-              "x-auth-token": localStorage.getItem("data-traffic-auth"),
+              "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
             },
           });
           setUser(response.data);

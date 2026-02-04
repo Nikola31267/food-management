@@ -24,11 +24,11 @@ const AdminOrdersPage = () => {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (localStorage.getItem("data-traffic-auth")) {
+      if (localStorage.getItem("data-auth-eduiteh-food")) {
         try {
           const response = await axios.get("/api/auth/user", {
             headers: {
-              "x-auth-token": localStorage.getItem("data-traffic-auth"),
+              "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
             },
           });
           if (response.data.role != "admin") {
@@ -108,7 +108,9 @@ const AdminOrdersPage = () => {
   const fetchOrders = async () => {
     try {
       const res = await axios.get("/api/orders", {
-        headers: { "x-auth-token": localStorage.getItem("data-traffic-auth") },
+        headers: {
+          "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+        },
       });
       setOrdersData(res.data);
     } catch (err) {
@@ -131,7 +133,7 @@ const AdminOrdersPage = () => {
         {},
         {
           headers: {
-            "x-auth-token": localStorage.getItem("data-traffic-auth"),
+            "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
           },
         },
       );
@@ -151,7 +153,7 @@ const AdminOrdersPage = () => {
     try {
       await axios.delete(`/api/orders/${userId}/${orderId}`, {
         headers: {
-          "x-auth-token": localStorage.getItem("data-traffic-auth"),
+          "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
         },
       });
       toast.success("Поръчката е изтрита успешно!");
