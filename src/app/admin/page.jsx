@@ -279,12 +279,11 @@ const AdminPage = () => {
       <Navbar user={user} />
 
       <div className="mx-auto max-w-5xl p-6 space-y-12">
-        {/* CREATE */}
         <div className="rounded-xl border bg-white p-6 space-y-6 shadow-sm">
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-xl font-semibold">Създай седмично меню</h2>
 
-            <label className="inline-flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer">
+            <label className="inline-flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm hover:border-[#478BAF] transition-colors duration-300 hover:bg-gray-50 cursor-pointer">
               <span className="font-medium">Upload .xlsx</span>
               <input
                 type="file"
@@ -335,7 +334,16 @@ const AdminPage = () => {
               <div key={day.day} className="rounded-xl border p-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold">{day.day}</h3>
-                  <Button variant="outline" onClick={() => addMeal(dayIndex)}>
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        days: addMeal(prev.days, dayIndex),
+                      }))
+                    }
+                    className="hover:border-[#478BAF] hover:bg-white transition-colors duration-300 hover:bg-gray-50"
+                  >
                     + Добави ястие
                   </Button>
                 </div>
@@ -347,46 +355,58 @@ const AdminPage = () => {
                       className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_180px_140px_auto] sm:items-center"
                     >
                       <input
-                        className="w-full rounded-lg border px-3 py-2"
+                        className="w-full rounded-lg border px-3 py-2 focus:outline-none focus:border-[#478BAF] focus:ring-2 focus:ring-[#478BAF]"
                         placeholder="Име на ястието"
                         value={meal.name}
                         onChange={(e) =>
-                          handleMealChange(
-                            dayIndex,
-                            meal.id,
-                            "name",
-                            e.target.value,
-                          )
+                          setForm((prev) => ({
+                            ...prev,
+                            days: handleMealChange(
+                              prev.days,
+                              dayIndex,
+                              meal.id,
+                              "name",
+                              e.target.value,
+                            ),
+                          }))
                         }
                       />
 
                       <input
-                        className="w-full rounded-lg border px-3 py-2"
-                        placeholder="Грамаж (напр. 250гр / 1фил)"
+                        className="w-full rounded-lg border px-3 py-2 focus:outline-none focus:border-[#478BAF] focus:ring-2 focus:ring-[#478BAF]"
+                        placeholder="Грамаж/Бройка"
                         value={meal.weight}
                         onChange={(e) =>
-                          handleMealChange(
-                            dayIndex,
-                            meal.id,
-                            "weight",
-                            e.target.value,
-                          )
+                          setForm((prev) => ({
+                            ...prev,
+                            days: handleMealChange(
+                              prev.days,
+                              dayIndex,
+                              meal.id,
+                              "weight",
+                              e.target.value,
+                            ),
+                          }))
                         }
                       />
 
                       <div className="flex items-center gap-2">
                         <input
                           inputMode="decimal"
-                          className="w-full rounded-lg border px-3 py-2"
+                          className="w-full rounded-lg border px-3 py-2 focus:outline-none focus:border-[#478BAF] focus:ring-2 focus:ring-[#478BAF]"
                           placeholder="Цена"
                           value={meal.price}
                           onChange={(e) =>
-                            handleMealChange(
-                              dayIndex,
-                              meal.id,
-                              "price",
-                              e.target.value,
-                            )
+                            setForm((prev) => ({
+                              ...prev,
+                              days: handleMealChange(
+                                prev.days,
+                                dayIndex,
+                                meal.id,
+                                "price",
+                                e.target.value,
+                              ),
+                            }))
                           }
                         />
                         <span className="text-sm text-gray-600">€</span>
@@ -394,8 +414,13 @@ const AdminPage = () => {
 
                       <Button
                         variant="outline"
-                        onClick={() => removeMeal(dayIndex, meal.id)}
-                        className="justify-self-start sm:justify-self-end"
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            days: removeMeal(prev.days, dayIndex, meal.id),
+                          }))
+                        }
+                        className="justify-self-start sm:justify-self-end hover:border-[#478BAF] transition-colors duration-300 hover:bg-gray-50"
                       >
                         −
                       </Button>
@@ -427,7 +452,11 @@ const AdminPage = () => {
               <h2 className="text-xl font-semibold">Сегашно меню</h2>
               <div className="flex gap-2">
                 {!isEditing && (
-                  <Button variant="outline" onClick={startEditing}>
+                  <Button
+                    variant="outline"
+                    className="hover:border-[#478BAF] hover:bg-gray-50 transition-colors duration-300"
+                    onClick={startEditing}
+                  >
                     ✏️ Редактирай
                   </Button>
                 )}
@@ -450,7 +479,7 @@ const AdminPage = () => {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <input
                     type="date"
-                    className="w-full rounded-lg border px-3 py-2"
+                    className="w-full rounded-lg border px-3 py-2 focus:outline-none focus:border-[#478BAF] focus:ring-2 focus:ring-[#478BAF]"
                     value={editForm.weekStart}
                     onChange={(e) =>
                       setEditForm({ ...editForm, weekStart: e.target.value })
@@ -458,7 +487,7 @@ const AdminPage = () => {
                   />
                   <input
                     type="date"
-                    className="w-full rounded-lg border px-3 py-2"
+                    className="w-full rounded-lg border px-3 py-2 focus:outline-none focus:border-[#478BAF] focus:ring-2 focus:ring-[#478BAF]"
                     value={editForm.weekEnd}
                     onChange={(e) =>
                       setEditForm({ ...editForm, weekEnd: e.target.value })
@@ -468,7 +497,7 @@ const AdminPage = () => {
 
                 <input
                   type="datetime-local"
-                  className="w-full rounded-lg border px-3 py-2"
+                  className="w-full rounded-lg border px-3 py-2 focus:outline-none focus:border-[#478BAF] focus:ring-2 focus:ring-[#478BAF]"
                   value={editForm.orderDeadline}
                   onChange={(e) =>
                     setEditForm({ ...editForm, orderDeadline: e.target.value })
@@ -480,9 +509,13 @@ const AdminPage = () => {
                     <div key={day.day} className="rounded-xl border p-4">
                       <div className="flex items-center justify-between">
                         <h3 className="font-bold">{day.day}</h3>
+
                         <Button
                           variant="outline"
-                          onClick={() => addEditMeal(dayIndex)}
+                          onClick={() =>
+                            setEditForm((prev) => addEditMeal(prev, dayIndex))
+                          }
+                          className="hover:border-[#478BAF] hover:bg-gray-50 transition-colors duration-300"
                         >
                           + Добави ястие
                         </Button>
@@ -498,11 +531,14 @@ const AdminPage = () => {
                               className="w-full rounded-lg border px-3 py-2"
                               value={meal.name}
                               onChange={(e) =>
-                                handleEditMealChange(
-                                  dayIndex,
-                                  meal.id,
-                                  "name",
-                                  e.target.value,
+                                setEditForm((prev) =>
+                                  handleEditMealChange(
+                                    prev,
+                                    dayIndex,
+                                    meal.id,
+                                    "name",
+                                    e.target.value,
+                                  ),
                                 )
                               }
                               placeholder="Име на ястието"
@@ -510,14 +546,17 @@ const AdminPage = () => {
 
                             <input
                               className="w-full rounded-lg border px-3 py-2"
-                              placeholder="Грамаж"
+                              placeholder="Грамаж/Бройка"
                               value={meal.weight || ""}
                               onChange={(e) =>
-                                handleEditMealChange(
-                                  dayIndex,
-                                  meal.id,
-                                  "weight",
-                                  e.target.value,
+                                setEditForm((prev) =>
+                                  handleEditMealChange(
+                                    prev,
+                                    dayIndex,
+                                    meal.id,
+                                    "weight",
+                                    e.target.value,
+                                  ),
                                 )
                               }
                             />
@@ -528,11 +567,14 @@ const AdminPage = () => {
                                 className="w-full rounded-lg border px-3 py-2"
                                 value={meal.price ?? ""}
                                 onChange={(e) =>
-                                  handleEditMealChange(
-                                    dayIndex,
-                                    meal.id,
-                                    "price",
-                                    e.target.value,
+                                  setEditForm((prev) =>
+                                    handleEditMealChange(
+                                      prev,
+                                      dayIndex,
+                                      meal.id,
+                                      "price",
+                                      e.target.value,
+                                    ),
                                   )
                                 }
                                 placeholder="Цена"
@@ -542,8 +584,12 @@ const AdminPage = () => {
 
                             <Button
                               variant="outline"
-                              onClick={() => removeEditMeal(dayIndex, meal.id)}
-                              className="justify-self-start sm:justify-self-end"
+                              onClick={() =>
+                                setEditForm((prev) =>
+                                  removeEditMeal(prev, dayIndex, meal.id),
+                                )
+                              }
+                              className="justify-self-start sm:justify-self-end hover:border-[#478BAF] transition-colors duration-300 hover:bg-gray-50"
                             >
                               −
                             </Button>

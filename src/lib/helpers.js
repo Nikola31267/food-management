@@ -21,56 +21,81 @@ export const formatDateTimeForInput = (isoDate) => {
 export const toISO = (localDateTimeOrDate) =>
   new Date(localDateTimeOrDate).toISOString();
 
-export const addMeal = (dayIndex) => {
-  const copy = structuredClone(form.days);
+export const addMeal = (days, dayIndex) => {
+  const copy = structuredClone(days);
   copy[dayIndex].meals.push({
     id: crypto.randomUUID(),
     name: "",
     weight: "",
     price: "",
   });
-  setForm({ ...form, days: copy });
+  return copy;
 };
 
-export const removeMeal = (dayIndex, mealId) => {
-  const copy = structuredClone(form.days);
+export const removeMeal = (days, dayIndex, mealId) => {
+  const copy = structuredClone(days);
+
   copy[dayIndex].meals = copy[dayIndex].meals.filter((m) => m.id !== mealId);
-  setForm({ ...form, days: copy });
+
+  return copy;
 };
 
-export const handleMealChange = (dayIndex, mealId, field, value) => {
-  const copy = structuredClone(form.days);
-  const idx = copy[dayIndex].meals.findIndex((m) => m.id === mealId);
-  if (idx === -1) return;
-  copy[dayIndex].meals[idx][field] = value;
-  setForm({ ...form, days: copy });
+export const handleMealChange = (days, dayIndex, mealId, field, value) => {
+  const copy = structuredClone(days);
+
+  const day = copy[dayIndex];
+  if (!day) return copy;
+
+  const idx = day.meals.findIndex((m) => m.id === mealId);
+  if (idx === -1) return copy;
+
+  day.meals[idx] = { ...day.meals[idx], [field]: value };
+  return copy;
 };
 
-export const addEditMeal = (dayIndex) => {
+export const addEditMeal = (editForm, dayIndex) => {
   const copy = structuredClone(editForm);
+
+  if (!copy.days?.[dayIndex]) return copy;
+
   copy.days[dayIndex].meals.push({
     id: crypto.randomUUID(),
     name: "",
     weight: "",
     price: "",
   });
-  setEditForm(copy);
+
+  return copy;
 };
 
-export const removeEditMeal = (dayIndex, mealId) => {
+export const removeEditMeal = (editForm, dayIndex, mealId) => {
   const copy = structuredClone(editForm);
+  if (!copy.days?.[dayIndex]) return copy;
+
   copy.days[dayIndex].meals = copy.days[dayIndex].meals.filter(
     (m) => m.id !== mealId,
   );
-  setEditForm(copy);
+
+  return copy;
 };
 
-export const handleEditMealChange = (dayIndex, mealId, field, value) => {
+export const handleEditMealChange = (
+  editForm,
+  dayIndex,
+  mealId,
+  field,
+  value,
+) => {
   const copy = structuredClone(editForm);
-  const idx = copy.days[dayIndex].meals.findIndex((m) => m.id === mealId);
-  if (idx === -1) return;
-  copy.days[dayIndex].meals[idx][field] = value;
-  setEditForm(copy);
+
+  const day = copy.days?.[dayIndex];
+  if (!day) return copy;
+
+  const idx = day.meals.findIndex((m) => m.id === mealId);
+  if (idx === -1) return copy;
+
+  day.meals[idx] = { ...day.meals[idx], [field]: value };
+  return copy;
 };
 
 export const formatDate = (date) => new Date(date).toISOString().split("T")[0];
