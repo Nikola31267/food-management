@@ -61,7 +61,7 @@ export const addEditMeal = (editForm, dayIndex) => {
   if (!copy.days?.[dayIndex]) return copy;
 
   copy.days[dayIndex].meals.push({
-    id: crypto.randomUUID(),
+    id: uuid(),
     name: "",
     weight: "",
     price: "",

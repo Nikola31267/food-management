@@ -23,6 +23,7 @@ import {
   formatDate,
 } from "@/lib/helpers";
 import { parseMenuFromRows } from "@/lib/excell-read-functions";
+import { uuid } from "@/lib/uuid";
 
 const DAYS = ["Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък"];
 
@@ -102,7 +103,7 @@ const AdminPage = () => {
       const parsed = parseMenuFromRows(rows).map((d) => ({
         day: d.day,
         meals: d.meals.map((m) => ({
-          id: crypto.randomUUID(),
+          id: uuid(),
           name: m.name,
           weight: m.weight,
           price: m.price == null ? "" : String(m.price),
@@ -181,7 +182,7 @@ const AdminPage = () => {
       ...d,
       meals: (d.meals || []).map((m) => ({
         ...m,
-        id: m.id || crypto.randomUUID(),
+        id: m.id || uuid(),
       })),
     }));
 
