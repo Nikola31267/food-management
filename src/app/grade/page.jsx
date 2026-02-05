@@ -116,7 +116,7 @@ export default function DropdownMenuBasic() {
 
             <p className="text-muted-foreground mb-6 leading-relaxed">
               Моля изберете клас за да можем да ви разпределим правилно и да
-              получите Вашата храната спокойно.
+              получите Вашата храната спокойно
             </p>
             <div className="flex flex-col gap-4">
               <DropdownMenu>
