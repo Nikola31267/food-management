@@ -297,36 +297,60 @@ const AdminPage = () => {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1">
               <p className="font-semibold">От:</p>
-              <input
-                type="date"
-                className="w-full rounded-lg border px-3 py-2"
-                value={form.weekStart}
-                onChange={(e) =>
-                  setForm({ ...form, weekStart: e.target.value })
-                }
-              />
+              <div
+                className="w-full rounded-lg border border-gray-300
+                 focus-within:border-[#478BAF]
+                 focus-within:ring-2 focus-within:ring-[#478BAF]"
+              >
+                <input
+                  type="date"
+                  className="w-full rounded-lg px-3 py-2
+                   focus:outline-none border-none bg-transparent"
+                  value={form.weekStart}
+                  onChange={(e) =>
+                    setForm({ ...form, weekStart: e.target.value })
+                  }
+                />
+              </div>
             </div>
+
             <div className="space-y-1">
               <p className="font-semibold">До:</p>
-              <input
-                type="date"
-                className="w-full rounded-lg border px-3 py-2"
-                value={form.weekEnd}
-                onChange={(e) => setForm({ ...form, weekEnd: e.target.value })}
-              />
+              <div
+                className="w-full rounded-lg border border-gray-300
+                 focus-within:border-[#478BAF]
+                 focus-within:ring-2 focus-within:ring-[#478BAF]"
+              >
+                <input
+                  type="date"
+                  className="w-full rounded-lg px-3 py-2
+                   focus:outline-none border-none bg-transparent"
+                  value={form.weekEnd}
+                  onChange={(e) =>
+                    setForm({ ...form, weekEnd: e.target.value })
+                  }
+                />
+              </div>
             </div>
           </div>
 
           <div className="space-y-1">
             <p className="font-semibold">Последен ден за поръчка:</p>
-            <input
-              type="datetime-local"
-              className="w-full rounded-lg border px-3 py-2"
-              value={form.orderDeadline}
-              onChange={(e) =>
-                setForm({ ...form, orderDeadline: e.target.value })
-              }
-            />
+            <div
+              className="w-full rounded-lg border border-gray-300
+               focus-within:border-[#478BAF]
+               focus-within:ring-2 focus-within:ring-[#478BAF]"
+            >
+              <input
+                type="datetime-local"
+                className="w-full rounded-lg px-3 py-2
+                 focus:outline-none border-none bg-transparent"
+                value={form.orderDeadline}
+                onChange={(e) =>
+                  setForm({ ...form, orderDeadline: e.target.value })
+                }
+              />
+            </div>
           </div>
 
           <div className="space-y-4">
