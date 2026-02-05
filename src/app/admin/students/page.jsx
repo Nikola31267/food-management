@@ -14,6 +14,8 @@ const page = () => {
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [submiting, setSubmiting] = useState(false);
+  const [search, setSearch] = useState("");
+  const [gradeFilter, setGradeFilter] = useState("");
 
   const router = useRouter();
 
@@ -62,7 +64,7 @@ const page = () => {
   const deleteStudent = async (id) => {
     if (!id) return;
 
-    const ok = window.confirm("Delete this student?");
+    const ok = window.confirm("Искате ли да изтриете този ученик?");
     if (!ok) return;
 
     try {
@@ -84,14 +86,57 @@ const page = () => {
     }
   };
 
+  const filteredStudents = useMemo(() => {
+    return students.filter((s) => {
+      const name = (s.fullName || s.email || "").toLowerCase();
+      const matchesSearch = name.includes(search.toLowerCase());
+
+      const matchesGrade =
+        !gradeFilter || String(s.grade) === String(gradeFilter);
+
+      return matchesSearch && matchesGrade;
+    });
+  }, [students, search, gradeFilter]);
+
+  const grades = useMemo(() => {
+    const set = new Set(
+      students
+        .map((s) => s.grade)
+        .filter((g) => g !== null && g !== undefined && g !== ""),
+    );
+    return Array.from(set).sort();
+  }, [students]);
+
   if (loading) return <Loader />;
 
   return (
     <div className="min-h-screen">
       <SidebarNav user={user} />
 
-      <main className="lg:pl-64 p-4">
+      <main className="lg:pl-64 p-4 ml-4">
         <h1 className="text-2xl font-semibold mb-4">Ученици</h1>
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          <input
+            type="text"
+            placeholder="Търсене по име..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="p-3 border rounded-full w-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
+          />
+
+          <select
+            value={gradeFilter}
+            onChange={(e) => setGradeFilter(e.target.value)}
+            className="w-full sm:w-40 px-3 py-2 border rounded-full focus:outline-none focus:ring-[#478BAF]"
+          >
+            <option value="">Всички класове</option>
+            {grades.map((g) => (
+              <option key={g} value={g}>
+                Клас {g}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <div className="border rounded-lg overflow-hidden bg-white">
           <div className="overflow-x-auto">
@@ -105,7 +150,7 @@ const page = () => {
               </thead>
 
               <tbody>
-                {!loadingStudents && students.length === 0 && (
+                {!loadingStudents && filteredStudents.length === 0 && (
                   <tr>
                     <td className="p-3 opacity-70" colSpan={3}>
                       Няма намерени ученици.

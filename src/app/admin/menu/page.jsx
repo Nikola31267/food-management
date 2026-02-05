@@ -6,7 +6,6 @@ import axios from "axios";
 import Loader from "@/components/layout/Loader";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import Navbar from "@/components/admin/Navbar";
 import { ShinyButton } from "@/components/ui/shiny-button";
 import { toast } from "react-toastify";
 import { Loader2 } from "lucide-react";

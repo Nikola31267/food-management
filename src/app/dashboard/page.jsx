@@ -9,6 +9,7 @@ import Link from "next/link";
 import { ShinyButton } from "@/components/ui/shiny-button";
 import { toast } from "react-toastify";
 import axios from "axios";
+import Footer from "@/components/layout/Footer";
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
@@ -88,7 +89,6 @@ const Dashboard = () => {
     const dayMeals = weeklyOrder[day] || [];
     const existing = dayMeals.find((m) => m.mealId === meal._id);
 
-    // 👉 Toast OUTSIDE state update
     if (existing) {
       toast.info(`Добавено още 1 × ${meal.name}`, {
         toastId: `${meal._id}-increase`,
@@ -207,32 +207,51 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
-      <div className="flex justify-between items-center border-b mb-10">
-        <div className="flex gap-2 items-center">
-          <Link href="/dashboard">
-            <Image src="/logo-nobg.png" alt="Logo" width={48} height={48} />
-          </Link>
-          <h1 className="text-lg font-semibold">
-            {user?.fullName} {user?.grade}
-          </h1>
-        </div>
-
-        <div className="flex items-center gap-4">
-          {user?.role === "admin" && (
-            <Link
-              href="/admin"
-              className="hover:underline hover:text-[#387fa5] transition-colors duration-200"
-            >
-              Admin
+      <div className="border-b mb-6 sm:mb-10">
+        <div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <Link href="/dashboard" className="shrink-0">
+              <Image
+                src="/logo-nobg.png"
+                alt="Logo"
+                width={40}
+                height={40}
+                className="sm:hidden"
+                draggable={false}
+              />
+              <Image
+                src="/logo-nobg.png"
+                alt="Logo"
+                width={48}
+                height={48}
+                className="hidden sm:block"
+                draggable={false}
+              />
             </Link>
-          )}
-          <ShinyButton
-            className="bg-[#478BAF] hover:bg-[#387fa5] py-1 px-1.5"
-            href="#"
-            onClick={handleLogout}
-          >
-            Излез от профила
-          </ShinyButton>
+
+            <h1 className="min-w-0 truncate text-base sm:text-lg font-semibold">
+              {user?.fullName} {user?.grade}
+            </h1>
+          </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+            {user?.role === "admin" && (
+              <Link
+                href="/admin"
+                className="text-sm sm:text-base hover:underline hover:text-[#387fa5] transition-colors duration-200"
+              >
+                Admin
+              </Link>
+            )}
+
+            <ShinyButton
+              className="bg-[#478BAF] hover:bg-[#387fa5] py-2 px-3 w-full sm:w-auto"
+              href="#"
+              onClick={handleLogout}
+            >
+              Излез от профила
+            </ShinyButton>
+          </div>
         </div>
       </div>
 
@@ -401,6 +420,7 @@ const Dashboard = () => {
           <p>Платено: {savedOrder?.paid ? <>Да</> : <>Не</>}</p>
         </div>
       )}
+      <Footer />
     </div>
   );
 };

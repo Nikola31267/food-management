@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { axiosInstance } from "@/lib/axios";
 import Loader from "@/components/layout/Loader";
 import { useRouter } from "next/navigation";
-import Navbar from "@/components/admin/Navbar";
 import { ShinyButton } from "@/components/ui/shiny-button";
 import { Loader2, Trash } from "lucide-react";
 import { toast } from "react-toastify";
