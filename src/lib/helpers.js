@@ -1,3 +1,5 @@
+import { uuid } from "@/lib/uuid";
+
 export const formatDateForInput = (isoDate) => {
   if (!isoDate) return "";
   const d = new Date(isoDate);
@@ -24,7 +26,7 @@ export const toISO = (localDateTimeOrDate) =>
 export const addMeal = (days, dayIndex) => {
   const copy = structuredClone(days);
   copy[dayIndex].meals.push({
-    id: crypto.randomUUID(),
+    id: uuid(),
     name: "",
     weight: "",
     price: "",
