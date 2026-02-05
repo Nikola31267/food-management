@@ -24,6 +24,7 @@ export async function PUT(req, { params }) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
     order.paid = true;
+    order.approvedBy = adminUser._id;
     await user.save();
 
     return NextResponse.json({
