@@ -273,9 +273,15 @@ const AdminOrdersPage = () => {
                       </td>
                       <td className="border p-2 text-center">
                         {week.paid ? (
-                          <span className="text-green-600 font-bold">
-                            Платено
-                          </span>
+                          <div className="text-green-600 font-bold flex flex-col gap-4">
+                            <div>Платено</div>
+
+                            {week.approvedBy?.fullName && (
+                              <div className="text-xs font-normal text-gray-600">
+                                Одобрил: {week.approvedBy.fullName}
+                              </div>
+                            )}
+                          </div>
                         ) : (
                           <button
                             onClick={() => markAsPaid(user._id, week._id)}
@@ -290,6 +296,7 @@ const AdminOrdersPage = () => {
                           </button>
                         )}
                       </td>
+
                       <td className="border p-2 text-center">
                         <button
                           onClick={() => deleteOrder(user._id, week._id)}

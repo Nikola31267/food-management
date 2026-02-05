@@ -19,7 +19,9 @@ export async function GET(req) {
     const users = await User.find(
       { orders: { $exists: true, $ne: [] } },
       "fullName grade orders",
-    ).lean();
+    )
+      .populate("orders.approvedBy", "fullName")
+      .lean();
 
     return NextResponse.json(users);
   } catch (err) {
