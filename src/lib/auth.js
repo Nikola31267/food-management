@@ -1,3 +1,4 @@
+// /lib/auth.js
 import jwt from "jsonwebtoken";
 
 export function verifyToken(req) {
@@ -17,4 +18,19 @@ export function verifyToken(req) {
   }
 
   return jwt.verify(token, process.env.JWT_SECRET);
+}
+
+export function requireAdmin(req) {
+  const decoded = verifyToken(req);
+
+  // adjust if your token shape differs
+  const role = decoded?.role || decoded?.user?.role;
+
+  if (role !== "admin") {
+    const err = new Error("Forbidden");
+    err.status = 403;
+    throw err;
+  }
+
+  return decoded;
 }

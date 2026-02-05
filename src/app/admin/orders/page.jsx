@@ -9,6 +9,7 @@ import { ShinyButton } from "@/components/ui/shiny-button";
 import { Loader2, Trash } from "lucide-react";
 import { toast } from "react-toastify";
 import axios from "axios";
+import { SidebarNav } from "@/components/dashboard/sidebar-nav";
 
 const AdminOrdersPage = () => {
   const [ordersData, setOrdersData] = useState([]);
@@ -187,161 +188,164 @@ const AdminOrdersPage = () => {
   if (loading) return <Loader />;
 
   return (
-    <>
-      <Navbar user={user} />
-      <div className="p-8 min-h-screen bg-gray-50">
-        <h1 className="text-3xl font-bold mb-6">Поръчки</h1>
+    <div className="min-h-screen">
+      <SidebarNav user={user} />
 
-        <input
-          type="text"
-          placeholder="Търси по име..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="mb-4 p-3 border rounded-full w-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
-        />
+      <main className="lg:pl-64">
+        <div className="p-8 min-h-screen bg-gray-50">
+          <h1 className="text-3xl font-bold mb-6">Поръчки</h1>
 
-        <select
-          value={selectedClass}
-          onChange={(e) => setSelectedClass(e.target.value)}
-          className="p-3 border rounded-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
-        >
-          <option value="">Всички класове</option>
-          {classes.map((grade) => (
-            <option key={grade} value={grade}>
-              {grade}
-            </option>
-          ))}
-        </select>
+          <input
+            type="text"
+            placeholder="Търси по име..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="mb-4 p-3 border rounded-full w-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
+          />
 
-        {ordersData.length !== 0 && (
-          <ShinyButton
-            onClick={downloadFoodByClassCSV}
-            href="/"
-            className="p-2 mb-2 mt-2"
+          <select
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            className="p-3 border rounded-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
           >
-            Изтегли поръчките
-          </ShinyButton>
-        )}
+            <option value="">Всички класове</option>
+            {classes.map((grade) => (
+              <option key={grade} value={grade}>
+                {grade}
+              </option>
+            ))}
+          </select>
 
-        {error && <p className="text-red-500 mb-4">{error}</p>}
+          {ordersData.length !== 0 && (
+            <ShinyButton
+              onClick={downloadFoodByClassCSV}
+              href="/"
+              className="p-2 mb-2 mt-2"
+            >
+              Изтегли поръчките
+            </ShinyButton>
+          )}
 
-        {filteredOrders.length === 0 ? (
-          <p>Няма намерени ученици.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse border">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th className="border p-2">Име</th>
-                  <th className="border p-2">Клас</th>
-                  <th className="border p-2">Поръчка</th>
-                  <th className="border p-2">Сума (€)</th>
-                  <th className="border p-2">Платено</th>
-                  <th className="border p-2">Действия</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedOrders.map((user) =>
-                  user.orders.map((week) => (
-                    <tr key={`${user._id}-${week._id}`} className="border-b">
-                      <td className="border p-2">{user.fullName}</td>
-                      <td className="border p-2">{user.grade}</td>
-                      <td className="border p-2">
-                        {week.days.map((day) => (
-                          <div key={day.day} className="mb-2">
-                            <strong>{day.day}:</strong>
-                            <ul className="ml-4">
-                              {day.meals.map((meal) => (
-                                <li key={meal.mealName}>
-                                  {meal.mealName} x {meal.quantity} = €
-                                  {meal.price * meal.quantity}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ))}
-                      </td>
-                      <td className="border p-2 font-bold">
-                        <span>
-                          {new Intl.NumberFormat("de-DE", {
-                            style: "currency",
-                            currency: "EUR",
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          }).format(week.totalPrice)}
-                        </span>
-                      </td>
-                      <td className="border p-2 text-center">
-                        {week.paid ? (
-                          <div className="text-green-600 font-bold flex flex-col gap-4">
-                            <div>Платено</div>
+          {error && <p className="text-red-500 mb-4">{error}</p>}
 
-                            {week.approvedBy?.fullName && (
-                              <div className="text-xs font-normal text-gray-600">
-                                Одобрил: {week.approvedBy.fullName}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
+          {filteredOrders.length === 0 ? (
+            <p>Няма намерени ученици.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border">
+                <thead>
+                  <tr className="bg-gray-200">
+                    <th className="border p-2">Име</th>
+                    <th className="border p-2">Клас</th>
+                    <th className="border p-2">Поръчка</th>
+                    <th className="border p-2">Сума (€)</th>
+                    <th className="border p-2">Платено</th>
+                    <th className="border p-2">Действия</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedOrders.map((user) =>
+                    user.orders.map((week) => (
+                      <tr key={`${user._id}-${week._id}`} className="border-b">
+                        <td className="border p-2">{user.fullName}</td>
+                        <td className="border p-2">{user.grade}</td>
+                        <td className="border p-2">
+                          {week.days.map((day) => (
+                            <div key={day.day} className="mb-2">
+                              <strong>{day.day}:</strong>
+                              <ul className="ml-4">
+                                {day.meals.map((meal) => (
+                                  <li key={meal.mealName}>
+                                    {meal.mealName} x {meal.quantity} = €
+                                    {meal.price * meal.quantity}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
+                        </td>
+                        <td className="border p-2 font-bold">
+                          <span>
+                            {new Intl.NumberFormat("de-DE", {
+                              style: "currency",
+                              currency: "EUR",
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            }).format(week.totalPrice)}
+                          </span>
+                        </td>
+                        <td className="border p-2 text-center">
+                          {week.paid ? (
+                            <div className="text-green-600 font-bold flex flex-col gap-4">
+                              <div>Платено</div>
+
+                              {week.approvedBy?.fullName && (
+                                <div className="text-xs font-normal text-gray-600">
+                                  Одобрил: {week.approvedBy.fullName}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => markAsPaid(user._id, week._id)}
+                              disabled={submiting}
+                              className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                              {submiting ? (
+                                <Loader2 className="animate-spin" />
+                              ) : (
+                                <span>Маркирай като платено</span>
+                              )}
+                            </button>
+                          )}
+                        </td>
+
+                        <td className="border p-2 text-center">
                           <button
-                            onClick={() => markAsPaid(user._id, week._id)}
+                            onClick={() => deleteOrder(user._id, week._id)}
                             disabled={submiting}
-                            className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                            className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
                           >
                             {submiting ? (
                               <Loader2 className="animate-spin" />
                             ) : (
-                              <span>Маркирай като платено</span>
+                              <Trash />
                             )}
                           </button>
-                        )}
-                      </td>
+                        </td>
+                      </tr>
+                    )),
+                  )}
+                </tbody>
+              </table>
+              <div className="flex justify-center items-center gap-4 mt-6">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 border border-[#478BAF] hover:bg-[#478BAF] transition-colors duration-300 hover:text-white rounded-lg disabled:opacity-50"
+                >
+                  Previous
+                </button>
 
-                      <td className="border p-2 text-center">
-                        <button
-                          onClick={() => deleteOrder(user._id, week._id)}
-                          disabled={submiting}
-                          className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-                        >
-                          {submiting ? (
-                            <Loader2 className="animate-spin" />
-                          ) : (
-                            <Trash />
-                          )}
-                        </button>
-                      </td>
-                    </tr>
-                  )),
-                )}
-              </tbody>
-            </table>
-            <div className="flex justify-center items-center gap-4 mt-6">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                disabled={currentPage === 1}
-                className="px-4 py-2 border border-[#478BAF] hover:bg-[#478BAF] transition-colors duration-300 hover:text-white rounded-lg disabled:opacity-50"
-              >
-                Previous
-              </button>
+                <span className="font-semibold">
+                  Page {currentPage} of {totalPages || 1}
+                </span>
 
-              <span className="font-semibold">
-                Page {currentPage} of {totalPages || 1}
-              </span>
-
-              <button
-                onClick={() =>
-                  setCurrentPage((p) => Math.min(p + 1, totalPages))
-                }
-                disabled={currentPage === totalPages}
-                className="px-4 py-2 border border-[#478BAF] hover:bg-[#478BAF] transition-colors duration-300 hover:text-white rounded-lg disabled:opacity-50"
-              >
-                Next
-              </button>
+                <button
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(p + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 border border-[#478BAF] hover:bg-[#478BAF] transition-colors duration-300 hover:text-white rounded-lg disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
-    </>
+          )}
+        </div>
+      </main>
+    </div>
   );
 };
 

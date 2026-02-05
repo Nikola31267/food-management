@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import { axiosInstance } from "@/lib/axios";
 import Loader from "@/components/layout/Loader";
 import { useRouter } from "next/navigation";
 import axios from "axios";
