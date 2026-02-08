@@ -29,11 +29,7 @@ export default function MyOldOrders() {
             headers: { "x-auth-token": token },
           });
 
-          if (userRes) {
-            setUser(userRes.data);
-          } else {
-            router.push("/sign-in");
-          }
+          setUser(userRes.data);
         }
 
         const res = await axios.get("/api/old-orders", {
@@ -52,6 +48,7 @@ export default function MyOldOrders() {
           e?.message ||
           "Failed to load old orders";
         setError(message);
+        router.push("/sign-in");
       } finally {
         setLoading(false);
       }
