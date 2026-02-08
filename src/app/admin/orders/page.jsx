@@ -193,13 +193,15 @@ const AdminOrdersPage = () => {
         <div className="p-8 min-h-screen bg-gray-50">
           <h1 className="text-3xl font-bold mb-6">Поръчки</h1>
 
-          <input
+         <div className="flex flex-row gap-2">
+           <input
             type="text"
             placeholder="Търси по име..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="mb-4 p-3 border rounded-full w-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
           />
+<div>
 
           <select
             value={selectedClass}
@@ -213,7 +215,9 @@ const AdminOrdersPage = () => {
               </option>
             ))}
           </select>
+</div>
 
+         </div>
           {ordersData.length !== 0 && (
             <ShinyButton
               onClick={downloadFoodByClassCSV}

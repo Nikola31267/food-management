@@ -121,13 +121,14 @@ const page = () => {
             placeholder="Търсене по име..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="p-3 border rounded-full w-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
+            className="mb-4 p-3 border rounded-full w-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
           />
 
-          <select
+         <div>
+           <select
             value={gradeFilter}
             onChange={(e) => setGradeFilter(e.target.value)}
-            className="w-full sm:w-40 px-3 py-2 border rounded-full focus:outline-none focus:ring-[#478BAF]"
+            className="w-full sm:w-40 p-3 border rounded-full focus:outline-none focus:ring-[#478BAF]"
           >
             <option value="">Всички класове</option>
             {grades.map((g) => (
@@ -136,6 +137,7 @@ const page = () => {
               </option>
             ))}
           </select>
+         </div>
         </div>
 
         <div className="border rounded-lg overflow-hidden bg-white">
