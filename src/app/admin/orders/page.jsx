@@ -18,6 +18,7 @@ const AdminOrdersPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClass, setSelectedClass] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [menuId, setMenuId] = useState(null);
   const ordersPerPage = 5;
   const router = useRouter();
 
@@ -47,7 +48,14 @@ const AdminOrdersPage = () => {
       }
     };
 
+    const fetchMenu = async () => {
+      const res = await axios.get("/api/menu");
+      console.log(res.data._id);
+      setMenuId(res.data._id);
+    };
+
     fetchUserProfile();
+    fetchMenu();
   }, [router]);
 
   useEffect(() => {
@@ -150,7 +158,7 @@ const AdminOrdersPage = () => {
     setSubmiting(true);
 
     try {
-      await axios.delete(`/api/orders/${userId}/${orderId}`, {
+      await axios.delete(`/api/orders/${userId}/${orderId}?menuId=${menuId}`, {
         headers: {
           "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
         },
@@ -193,31 +201,29 @@ const AdminOrdersPage = () => {
         <div className="p-8 min-h-screen bg-gray-50">
           <h1 className="text-3xl font-bold mb-6">Поръчки</h1>
 
-         <div className="flex flex-row gap-2">
-           <input
-            type="text"
-            placeholder="Търси по име..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="mb-4 p-3 border rounded-full w-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
-          />
-<div>
-
-          <select
-            value={selectedClass}
-            onChange={(e) => setSelectedClass(e.target.value)}
-            className="p-3 border rounded-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
-          >
-            <option value="">Всички класове</option>
-            {classes.map((grade) => (
-              <option key={grade} value={grade}>
-                {grade}
-              </option>
-            ))}
-          </select>
-</div>
-
-         </div>
+          <div className="flex flex-row gap-2">
+            <input
+              type="text"
+              placeholder="Търси по име..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="mb-4 p-3 border rounded-full w-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
+            />
+            <div>
+              <select
+                value={selectedClass}
+                onChange={(e) => setSelectedClass(e.target.value)}
+                className="p-3 border rounded-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
+              >
+                <option value="">Всички класове</option>
+                {classes.map((grade) => (
+                  <option key={grade} value={grade}>
+                    {grade}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
           {ordersData.length !== 0 && (
             <ShinyButton
               onClick={downloadFoodByClassCSV}

@@ -206,222 +206,236 @@ const Dashboard = () => {
   if (loading) return <Loader />;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="border-b mb-6 sm:mb-10">
-        <div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 min-w-0">
-            <Link href="/dashboard" className="shrink-0">
-              <Image
-                src="/logo-nobg.png"
-                alt="Logo"
-                width={40}
-                height={40}
-                className="sm:hidden"
-                draggable={false}
-              />
-              <Image
-                src="/logo-nobg.png"
-                alt="Logo"
-                width={48}
-                height={48}
-                className="hidden sm:block"
-                draggable={false}
-              />
-            </Link>
+    <>
+      <div className="min-h-screen bg-gray-100 p-8">
+        <div className="border-b mb-6 sm:mb-10">
+          <div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 min-w-0">
+              <Link href="/dashboard" className="shrink-0">
+                <Image
+                  src="/logo-nobg.png"
+                  alt="Logo"
+                  width={40}
+                  height={40}
+                  className="sm:hidden"
+                  draggable={false}
+                />
+                <Image
+                  src="/logo-nobg.png"
+                  alt="Logo"
+                  width={48}
+                  height={48}
+                  className="hidden sm:block"
+                  draggable={false}
+                />
+              </Link>
 
-            <h1 className="min-w-0 truncate text-base sm:text-lg font-semibold">
-              {user?.fullName} {user?.grade}
-            </h1>
-          </div>
+              <h1 className="min-w-0 truncate text-base sm:text-lg font-semibold">
+                {user?.fullName} {user?.grade}
+              </h1>
+            </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-            {user?.role === "admin" && (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+              {user?.role === "admin" && (
+                <Link
+                  href="/admin"
+                  className="text-sm sm:text-base hover:underline hover:text-[#387fa5] transition-colors duration-200"
+                >
+                  Admin
+                </Link>
+              )}
               <Link
-                href="/admin"
+                href="/dashboard/old-orders"
                 className="text-sm sm:text-base hover:underline hover:text-[#387fa5] transition-colors duration-200"
               >
-                Admin
+                Стари поръчки
               </Link>
-            )}
 
-            <ShinyButton
-              className="bg-[#478BAF] hover:bg-[#387fa5] py-2 px-3 w-full sm:w-auto"
-              href="#"
-              onClick={handleLogout}
-            >
-              Излез от профила
-            </ShinyButton>
+              <ShinyButton
+                className="bg-[#478BAF] hover:bg-[#387fa5] py-2 px-3 w-full sm:w-auto"
+                href="#"
+                onClick={handleLogout}
+              >
+                Излез от профила
+              </ShinyButton>
+            </div>
           </div>
         </div>
-      </div>
 
-      {!menu && (
-        <h1 className="text-xl font-bold text-center mb-4 text-gray-600">
-          Няма активно меню за седмицата
-        </h1>
-      )}
-
-      {menu && (
-        <>
-          <h1 className="text-3xl font-bold text-center mb-4">
-            Меню за седмица:
+        {!menu && (
+          <h1 className="text-xl font-bold text-center mb-4 text-gray-600">
+            Няма активно меню за седмицата
           </h1>
-          <div className="flex flex-col text-center gap-2 text-gray-600">
-            <p>
-              {new Date(menu.weekStart).toLocaleDateString()} –{" "}
-              {new Date(menu.weekEnd).toLocaleDateString()}
-            </p>
-            <p>
-              Последна поръчка:{" "}
-              {new Date(menu.orderDeadline).toLocaleString("bg-BG", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </p>
-          </div>
-        </>
-      )}
+        )}
 
-      {menuExpired && (
-        <p className="text-center text-red-600 font-semibold mb-8">
-          Поръчките за тази седмица са затворени
-        </p>
-      )}
+        {menu && (
+          <>
+            <h1 className="text-3xl font-bold text-center mb-4">
+              Меню за седмица:
+            </h1>
+            <div className="flex flex-col text-center gap-2 text-gray-600">
+              <p>
+                {new Date(menu.weekStart).toLocaleDateString()} –{" "}
+                {new Date(menu.weekEnd).toLocaleDateString()}
+              </p>
+              <p>
+                Последна поръчка:{" "}
+                {new Date(menu.orderDeadline).toLocaleString("bg-BG", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
+            </div>
+          </>
+        )}
 
-      {menu?.days.map((day) => {
-        const orderedDay = getOrderedDay(day.day);
+        {menuExpired && (
+          <p className="text-center text-red-600 font-semibold mb-8">
+            Поръчките за тази седмица са затворени
+          </p>
+        )}
 
-        return (
-          <div key={day.day} className="border rounded mb-6">
-            <h2 className="bg-gray-100 p-3 font-semibold text-lg">{day.day}</h2>
+        {menu?.days.map((day) => {
+          const orderedDay = getOrderedDay(day.day);
 
-            {hasOrdered ? (
-              <div className="p-4 bg-gray-50">
-                {orderedDay ? (
-                  orderedDay.meals.map((meal, index) => (
-                    <div key={index} className="flex justify-between mb-2">
-                      <span>
-                        {meal.mealName} × {meal.quantity}
-                      </span>
-                      <span>€{meal.price * meal.quantity}</span>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500 text-sm">
-                    Няма поръчка за този ден
-                  </p>
-                )}
-              </div>
-            ) : menuExpired ? (
-              <div className="p-4 text-center text-gray-500">
-                Поръчването приключи
-              </div>
-            ) : (
-              <>
-                <table className="w-full">
-                  <tbody>
-                    {day.meals.length === 0 ? (
-                      <tr>
-                        <td className="p-4 text-center text-gray-500">
-                          Няма зададена храна
-                        </td>
-                      </tr>
-                    ) : (
-                      day.meals.map((meal) => (
-                        <tr key={meal._id} className="border-t">
-                          <td className="p-2">{meal.name}</td>
-                          <td className="p-2">{meal.weight}</td>
-                          <td className="p-2">€{meal.price}</td>
-                          <td className="p-2 text-center">
-                            <button
-                              onClick={() => addMealToOrder(day.day, meal)}
-                              // className="bg-[#478BAF] text-white hover:bg-[#3a83ab] px-4 py-2 rounded-xl transition-colors duration-300"
-                              className="bg-gray-200 text-[#478BAF] hover:bg-gray-300 px-4 py-2 rounded-xl transition-colors duration-300 text-xl font-bold"
-                            >
-                              +
-                            </button>
+          return (
+            <div key={day.day} className="border rounded mb-6">
+              <h2 className="bg-gray-100 p-3 font-semibold text-lg">
+                {day.day}
+              </h2>
+
+              {hasOrdered ? (
+                <div className="p-4 bg-gray-50">
+                  {orderedDay ? (
+                    orderedDay.meals.map((meal, index) => (
+                      <div key={index} className="flex justify-between mb-2">
+                        <span>
+                          {meal.mealName} × {meal.quantity}
+                        </span>
+                        <span>€{meal.price * meal.quantity}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500 text-sm">
+                      Няма поръчка за този ден
+                    </p>
+                  )}
+                </div>
+              ) : menuExpired ? (
+                <div className="p-4 text-center text-gray-500">
+                  Поръчването приключи
+                </div>
+              ) : (
+                <>
+                  <table className="w-full">
+                    <tbody>
+                      {day.meals.length === 0 ? (
+                        <tr>
+                          <td className="p-4 text-center text-gray-500">
+                            Няма зададена храна
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                      ) : (
+                        day.meals.map((meal) => (
+                          <tr key={meal._id} className="border-t">
+                            <td className="p-2">{meal.name}</td>
+                            <td className="p-2">{meal.weight}</td>
+                            <td className="p-2">€{meal.price}</td>
+                            <td className="p-2 text-center">
+                              <button
+                                onClick={() => addMealToOrder(day.day, meal)}
+                                // className="bg-[#478BAF] text-white hover:bg-[#3a83ab] px-4 py-2 rounded-xl transition-colors duration-300"
+                                className="bg-gray-200 text-[#478BAF] hover:bg-gray-300 px-4 py-2 rounded-xl transition-colors duration-300 text-xl font-bold"
+                              >
+                                +
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
 
-                {weeklyOrder[day.day] && (
-                  <div className="p-3 bg-gray-50">
-                    {weeklyOrder[day.day].map((meal) => (
-                      <div key={meal.mealId} className="flex gap-3 mb-2">
-                        <span>{meal.name}</span>
-                        <button
-                          onClick={() => decreaseQuantity(day.day, meal.mealId)}
-                        >
-                          -
-                        </button>
-                        <span>{meal.quantity}</span>
-                        <button
-                          onClick={() => increaseQuantity(day.day, meal.mealId)}
-                        >
-                          +
-                        </button>
-                        <span className="ml-auto">
-                          €{meal.price * meal.quantity}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
+                  {weeklyOrder[day.day] && (
+                    <div className="p-3 bg-gray-50">
+                      {weeklyOrder[day.day].map((meal) => (
+                        <div key={meal.mealId} className="flex gap-3 mb-2">
+                          <span>{meal.name}</span>
+                          <button
+                            onClick={() =>
+                              decreaseQuantity(day.day, meal.mealId)
+                            }
+                          >
+                            -
+                          </button>
+                          <span>{meal.quantity}</span>
+                          <button
+                            onClick={() =>
+                              increaseQuantity(day.day, meal.mealId)
+                            }
+                          >
+                            +
+                          </button>
+                          <span className="ml-auto">
+                            €{meal.price * meal.quantity}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })}
+
+        {!hasOrdered && hasMenu && !menuExpired && (
+          <div className="flex justify-center gap-6 mt-8">
+            <p className="text-xl font-bold">
+              Общо:{" "}
+              <span>
+                {new Intl.NumberFormat("de-DE", {
+                  style: "currency",
+                  currency: "EUR",
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }).format(totalPrice)}
+              </span>
+            </p>
+            <ShinyButton
+              href="#"
+              disabled={submiting}
+              onClick={submitWeeklyOrder}
+            >
+              Поръчай
+            </ShinyButton>
           </div>
-        );
-      })}
+        )}
 
-      {!hasOrdered && hasMenu && !menuExpired && (
-        <div className="flex justify-center gap-6 mt-8">
-          <p className="text-xl font-bold">
-            Общо:{" "}
-            <span>
-              {new Intl.NumberFormat("de-DE", {
-                style: "currency",
-                currency: "EUR",
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              }).format(totalPrice)}
-            </span>
-          </p>
-          <ShinyButton
-            href="#"
-            disabled={submiting}
-            onClick={submitWeeklyOrder}
-          >
-            Поръчай
-          </ShinyButton>
-        </div>
-      )}
-
-      {hasOrdered && savedOrder && (
-        <div className="text-center mt-8 text-xl font-bold">
-          Дължима сума:{" "}
-          {savedOrder?.paid ? (
-            <span>0 €</span>
-          ) : (
-            <span>
-              {new Intl.NumberFormat("de-DE", {
-                style: "currency",
-                currency: "EUR",
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              }).format(savedOrder.totalPrice)}
-            </span>
-          )}
-          <p>Платено: {savedOrder?.paid ? <>Да</> : <>Не</>}</p>
-        </div>
-      )}
+        {hasOrdered && savedOrder && (
+          <div className="text-center mt-8 text-xl font-bold">
+            Дължима сума:{" "}
+            {savedOrder?.paid ? (
+              <span>0 €</span>
+            ) : (
+              <span>
+                {new Intl.NumberFormat("de-DE", {
+                  style: "currency",
+                  currency: "EUR",
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }).format(savedOrder.totalPrice)}
+              </span>
+            )}
+            <p>Платено: {savedOrder?.paid ? <>Да</> : <>Не</>}</p>
+          </div>
+        )}
+      </div>
       <Footer />
-    </div>
+    </>
   );
 };
 
