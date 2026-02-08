@@ -14,7 +14,7 @@ export async function DELETE(req, { params }) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    const { userId, orderId } = params;
+    const { userId, orderId } = await params;
     const user = await User.findById(userId);
     if (!user)
       return NextResponse.json({ error: "User not found" }, { status: 404 });
