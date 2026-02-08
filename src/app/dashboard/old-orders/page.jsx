@@ -7,17 +7,15 @@ import Link from "next/link";
 import Loader from "@/components/layout/Loader";
 import { ShinyButton } from "@/components/ui/shiny-button";
 import Footer from "@/components/layout/Footer";
+import { useRouter } from "next/navigation";
 
 export default function MyOldOrders() {
   const [loading, setLoading] = useState(true);
   const [oldOrders, setOldOrders] = useState([]);
   const [error, setError] = useState("");
-
-  // navbar user (same vibe as Dashboard)
   const [user, setUser] = useState(null);
-
-  // dropdown state: which order cards are open
-  const [openMap, setOpenMap] = useState({}); // { [orderId]: boolean }
+  const [openMap, setOpenMap] = useState({});
+  const router = useRouter();
 
   useEffect(() => {
     async function init() {
@@ -26,16 +24,18 @@ export default function MyOldOrders() {
 
       try {
         const token = localStorage.getItem("data-auth-eduiteh-food");
-
-        // user for navbar
         if (token) {
           const userRes = await axios.get("/api/auth/user", {
             headers: { "x-auth-token": token },
           });
-          setUser(userRes.data);
+
+          if (userRes) {
+            setUser(userRes.data);
+          } else {
+            router.push("/sign-in");
+          }
         }
 
-        // old orders
         const res = await axios.get("/api/old-orders", {
           headers: { "x-auth-token": token },
         });
@@ -43,7 +43,6 @@ export default function MyOldOrders() {
         const orders = res.data?.oldOrders || [];
         setOldOrders(orders);
 
-        // default: all closed
         const initial = {};
         for (const o of orders) initial[o._id] = false;
         setOpenMap(initial);
@@ -85,23 +84,6 @@ export default function MyOldOrders() {
   const toggle = (id) => {
     setOpenMap((prev) => ({ ...prev, [id]: !prev[id] }));
   };
-
-  const openAll = () => {
-    const next = {};
-    for (const o of oldOrders) next[o._id] = true;
-    setOpenMap(next);
-  };
-
-  const closeAll = () => {
-    const next = {};
-    for (const o of oldOrders) next[o._id] = false;
-    setOpenMap(next);
-  };
-
-  const anyOpen = useMemo(
-    () => oldOrders.some((o) => openMap[o._id]),
-    [oldOrders, openMap],
-  );
 
   if (loading) return <Loader />;
 
