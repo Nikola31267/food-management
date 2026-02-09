@@ -101,3 +101,69 @@ export const handleEditMealChange = (
 };
 
 export const formatDate = (date) => new Date(date).toISOString().split("T")[0];
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function isoFromParts(year, month, day) {
+  return `${year}-${pad2(month)}-${pad2(day)}`;
+}
+
+function normalizeMenuBaseName(fileName) {
+  let base = fileName.replace(/\.[^.]+$/i, "").trim();
+
+  base = base.replace(/\s*(\d{2,4})\s*[gг]\s*$/i, "$1г");
+
+  base = base.replace(/\s+/g, " ");
+  return base;
+}
+
+export function parseWeekFromMenuFilename(fileName) {
+  const base = normalizeMenuBaseName(fileName);
+
+  const m = base.match(
+    /(\d{1,2})\.(\d{1,2})\s*-\s*(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})\s*[gг]?$/i,
+  );
+
+  if (!m) return null;
+
+  const d1 = Number(m[1]);
+  const mo1 = Number(m[2]);
+  const d2 = Number(m[3]);
+  const mo2 = Number(m[4]);
+  let y = Number(m[5]);
+
+  if (
+    Number.isNaN(d1) ||
+    Number.isNaN(mo1) ||
+    Number.isNaN(d2) ||
+    Number.isNaN(mo2) ||
+    Number.isNaN(y)
+  ) {
+    return null;
+  }
+
+  if (y < 100) y = 2000 + y;
+
+  const start = new Date(y, mo1 - 1, d1);
+  const end = new Date(y, mo2 - 1, d2);
+
+  const validStart =
+    start.getFullYear() === y &&
+    start.getMonth() === mo1 - 1 &&
+    start.getDate() === d1;
+
+  const validEnd =
+    end.getFullYear() === y &&
+    end.getMonth() === mo2 - 1 &&
+    end.getDate() === d2;
+
+  if (!validStart || !validEnd) return null;
+
+  return {
+    weekStart: isoFromParts(y, mo1, d1),
+    weekEnd: isoFromParts(y, mo2, d2),
+    normalizedBaseName: base.replace(/(\d{2,4})(?:\s*[gг])?$/i, "$1г"),
+  };
+}

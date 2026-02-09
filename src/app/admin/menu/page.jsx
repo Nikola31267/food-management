@@ -24,6 +24,7 @@ import {
 import { parseMenuFromRows } from "@/lib/excell-read-functions";
 import { uuid } from "@/lib/uuid";
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
+import { parseWeekFromMenuFilename } from "@/lib/helpers";
 
 const DAYS = ["Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък"];
 
@@ -91,6 +92,16 @@ const AdminPage = () => {
     }
 
     try {
+      // ✅ 1) Parse week from filename and auto-fill
+      const weekInfo = parseWeekFromMenuFilename(file.name);
+      if (weekInfo) {
+        setForm((prev) => ({
+          ...prev,
+          weekStart: weekInfo.weekStart,
+          weekEnd: weekInfo.weekEnd,
+        }));
+      }
+
       const arrayBuffer = await file.arrayBuffer();
       const workbook = XLSX.read(arrayBuffer, { type: "array" });
       const firstSheetName = workbook.SheetNames[0];
@@ -122,8 +133,13 @@ const AdminPage = () => {
 
       setMenuCsvText(csvText);
 
-      const baseName = file.name.replace(/\.xlsx$/i, "");
-      setMenuCsvName(`${baseName}.csv`);
+      // ✅ 2) Force CSV filename to be your normalized Bulgarian format
+      if (weekInfo?.normalizedBaseName) {
+        setMenuCsvName(`${weekInfo.normalizedBaseName}.csv`);
+      } else {
+        const baseName = file.name.replace(/\.xlsx$/i, "");
+        setMenuCsvName(`${baseName}.csv`);
+      }
 
       toast.success("Менюто е заредено от Excel");
     } catch (err) {
