@@ -67,23 +67,19 @@ const AdminOrdersPage = () => {
 
     ordersData.forEach((user) => {
       const grade = user.grade;
-
-      if (!classFoodMap[grade]) {
-        classFoodMap[grade] = {};
-      }
+      if (!classFoodMap[grade]) classFoodMap[grade] = {};
 
       user.orders.forEach((week) => {
         week.days.forEach((day) => {
           day.meals.forEach((meal) => {
-            if (!classFoodMap[grade][meal.mealName]) {
+            if (!classFoodMap[grade][meal.mealName])
               classFoodMap[grade][meal.mealName] = 0;
-            }
-
             classFoodMap[grade][meal.mealName] += meal.quantity;
           });
         });
       });
     });
+
     const rows = [];
     rows.push(["Клас", "Ястие", "Бройка"]);
 
@@ -97,18 +93,21 @@ const AdminOrdersPage = () => {
       .map((row) =>
         row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
       )
-      .join("\n");
+      .join("\r\n"); // <-- important for Excel
 
-    const blob = new Blob([csvContent], {
-      type: "text/csv;charset=utf-8;",
+    const BOM = "\uFEFF"; // <-- critical for Excel UTF-8 detection
+
+    const blob = new Blob([BOM + csvContent], {
+      type: "text/csv;charset=utf-8",
     });
 
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     link.download = "food-by-class.csv";
+    document.body.appendChild(link);
     link.click();
-
+    link.remove();
     URL.revokeObjectURL(url);
   };
 
