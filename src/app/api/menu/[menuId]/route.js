@@ -4,50 +4,16 @@ import { verifyToken } from "@/lib/auth";
 import User from "@/models/User";
 import WeeklyMenu from "@/models/Menu";
 import OldOrder from "@/models/OldOrder";
+import Unpaid from "@/models/Unpaid"; // ✅ add this
 import { Parser } from "json2csv";
 
-
-export async function PUT(req, { params }) {
-  await connectDB();
-
-  try {
-    const decoded = verifyToken(req);
-    const user = await User.findById(decoded.id);
-
-    if (user.role !== "admin") {
-      return NextResponse.json({ message: "Not authorized" }, { status: 403 });
-    }
-
-    const { menuId } = await params;
-    const { weekStart, weekEnd, days, orderDeadline } = await req.json();
-
-    const deadlineDate = new Date(orderDeadline);
-    if (!orderDeadline || isNaN(deadlineDate)) {
-      return NextResponse.json(
-        { message: "Invalid order deadline" },
-        { status: 400 },
-      );
-    }
-
-    const updatedMenu = await WeeklyMenu.findByIdAndUpdate(
-      menuId,
-      {
-        weekStart,
-        weekEnd,
-        orderDeadline: deadlineDate,
-        days,
-      },
-      { new: true },
-    );
-
-    if (!updatedMenu) {
-      return NextResponse.json({ message: "Menu not found" }, { status: 404 });
-    }
-
-    return NextResponse.json(updatedMenu);
-  } catch (err) {
-    return NextResponse.json({ message: err.message }, { status: 500 });
-  }
+function isOrderPaid(order) {
+  // ✅ supports a few common naming styles
+  if (order?.paid === true) return true;
+  if (order?.isPaid === true) return true;
+  if (order?.paymentStatus === "paid") return true;
+  if (order?.status === "paid") return true;
+  return false;
 }
 
 export async function DELETE(req, { params }) {
@@ -71,7 +37,7 @@ export async function DELETE(req, { params }) {
 
     const usersWithOrders = await User.find(
       { "orders.menuId": menuId },
-      { email: 1, fullName: 1, grade: 1, orders: 1 }
+      { email: 1, fullName: 1, grade: 1, orders: 1 },
     ).lean();
 
     let csv;
@@ -98,7 +64,9 @@ export async function DELETE(req, { params }) {
 
             order.days.forEach((day) => {
               row[day.day] =
-                day.meals?.map((m) => `${m.mealName} x${m.quantity}`).join(", ") || "—";
+                day.meals
+                  ?.map((m) => `${m.mealName} x${m.quantity}`)
+                  .join(", ") || "—";
             });
           });
 
@@ -106,18 +74,30 @@ export async function DELETE(req, { params }) {
       });
 
       const parser = new Parser({
-        fields: ["Name", "Grade", "Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък", "Total"],
+        fields: [
+          "Name",
+          "Grade",
+          "Понеделник",
+          "Вторник",
+          "Сряда",
+          "Четвъртък",
+          "Петък",
+          "Total",
+        ],
       });
 
       csv = parser.parse(rows);
     }
 
     // ---- ARCHIVE ORDERS ----
-    // One archive doc per user per menu
     const archiveDocs = usersWithOrders.map((u) => {
-      const matchingOrders = u.orders.filter((o) => o.menuId.toString() === menuId);
-
-      const total = matchingOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+      const matchingOrders = u.orders.filter(
+        (o) => o.menuId.toString() === menuId,
+      );
+      const total = matchingOrders.reduce(
+        (sum, o) => sum + (o.totalPrice || 0),
+        0,
+      );
 
       return {
         menuId,
@@ -137,10 +117,42 @@ export async function DELETE(req, { params }) {
       await OldOrder.insertMany(archiveDocs, { ordered: false });
     }
 
+    // ---- SAVE UNPAID (per user per menu) ----
+    // menuDate: store the "week" info in one field (adjust to your Unpaid schema preference)
+    const menuDate =
+      menu.weekStart && menu.weekEnd
+        ? `${new Date(menu.weekStart).toISOString().slice(0, 10)} - ${new Date(menu.weekEnd).toISOString().slice(0, 10)}`
+        : menu.weekStart
+          ? new Date(menu.weekStart).toISOString().slice(0, 10)
+          : String(menuId);
+
+    const unpaidDocs = [];
+
+    usersWithOrders.forEach((u) => {
+      const matchingOrders = u.orders.filter(
+        (o) => o.menuId.toString() === menuId,
+      );
+      const unpaidTotal = matchingOrders
+        .filter((o) => !isOrderPaid(o))
+        .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+
+      if (unpaidTotal > 0) {
+        unpaidDocs.push({
+          name: u.fullName || "—",
+          grade: u.grade || "—",
+          total: unpaidTotal,
+          menuDate,
+        });
+      }
+    });
+
+    if (unpaidDocs.length) {
+      await Unpaid.insertMany(unpaidDocs, { ordered: false });
+    }
+
+    // ---- DELETE MENU + REMOVE ORDERS ----
     await WeeklyMenu.findByIdAndDelete(menuId);
-
     await User.updateMany({}, { $pull: { orders: { menuId } } });
-
 
     if (download) {
       return new Response(csv, {
@@ -154,6 +166,9 @@ export async function DELETE(req, { params }) {
     return NextResponse.json({
       message: "Weekly menu deleted; orders archived.",
       archivedCount: archiveDocs.length,
+      unpaidCount: unpaidDocs.length,
+      unpaidSaved: unpaidDocs.length,
+      menuDate,
     });
   } catch (err) {
     return NextResponse.json({ message: err.message }, { status: 500 });
