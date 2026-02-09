@@ -34,6 +34,8 @@ const AdminPage = () => {
   const [submiting, setSubmiting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState(null);
+  const [menuCsvText, setMenuCsvText] = useState("");
+  const [menuCsvName, setMenuCsvName] = useState("");
 
   const router = useRouter();
 
@@ -111,7 +113,19 @@ const AdminPage = () => {
       }));
 
       setForm((prev) => ({ ...prev, days: parsed }));
-      toast.success("Менюто е заредено от Excel ✅");
+
+      const csvText = XLSX.utils.sheet_to_csv(sheet, {
+        FS: ",",
+        RS: "\r\n",
+        blankrows: false,
+      });
+
+      setMenuCsvText(csvText);
+
+      const baseName = file.name.replace(/\.xlsx$/i, "");
+      setMenuCsvName(`${baseName}.csv`);
+
+      toast.success("Менюто е заредено от Excel");
     } catch (err) {
       console.error(err);
       toast.error("Failed to read XLSX file.");
@@ -145,6 +159,9 @@ const AdminPage = () => {
                 : Number(String(m.price).replace(",", ".")),
           })),
       })),
+
+      menuFile: menuCsvText || "",
+      menuFileName: menuCsvName || "",
     };
 
     setSubmiting(true);
@@ -164,6 +181,9 @@ const AdminPage = () => {
         orderDeadline: "",
         days: DAYS.map((d) => ({ day: d, meals: [] })),
       });
+
+      setMenuCsvText("");
+      setMenuCsvName("");
     } catch (e) {
       console.error(e);
       toast.error(e?.response?.data?.message || "Failed to save menu");

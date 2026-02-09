@@ -22,6 +22,12 @@ const AdminOrdersPage = () => {
   const ordersPerPage = 5;
   const router = useRouter();
 
+  const normalizeMealName = (s) =>
+    String(s || "")
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .trim();
+
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (localStorage.getItem("data-auth-eduiteh-food")) {
@@ -109,6 +115,145 @@ const AdminOrdersPage = () => {
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
+  };
+
+  const downloadMenuWithCountsCSV = async () => {
+    try {
+      const menuRes = await axios.get("/api/menu");
+      const menu = menuRes.data;
+
+      if (!menu?.menuFile) {
+        toast.error("Няма запазен CSV файл (menuFile) към менюто.");
+        return;
+      }
+
+      const totals = {};
+
+      ordersData.forEach((user) => {
+        user.orders.forEach((week) => {
+          week.days.forEach((day) => {
+            day.meals.forEach((meal) => {
+              const key = normalizeMealName(meal.mealName);
+              totals[key] = (totals[key] || 0) + (meal.quantity || 0);
+            });
+          });
+        });
+      });
+
+      const parseCSV = (text) => {
+        const rows = [];
+        let row = [];
+        let cell = "";
+        let inQuotes = false;
+
+        text = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+        for (let i = 0; i < text.length; i++) {
+          const ch = text[i];
+          const next = text[i + 1];
+
+          if (ch === '"' && inQuotes && next === '"') {
+            cell += '"';
+            i++;
+            continue;
+          }
+          if (ch === '"') {
+            inQuotes = !inQuotes;
+            continue;
+          }
+          if (!inQuotes && ch === ",") {
+            row.push(cell);
+            cell = "";
+            continue;
+          }
+          if (!inQuotes && ch === "\n") {
+            row.push(cell);
+            rows.push(row);
+            row = [];
+            cell = "";
+            continue;
+          }
+          cell += ch;
+        }
+
+        row.push(cell);
+        rows.push(row);
+        return rows;
+      };
+
+      const toCSV = (rows) =>
+        rows
+          .map((r) =>
+            r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(","),
+          )
+          .join("\r\n");
+
+      const rows = parseCSV(menu.menuFile);
+
+      let qtyCol = -1;
+      for (const r of rows) {
+        const idx = r.findIndex((c) => normalizeMealName(c) === "брой");
+        if (idx !== -1) {
+          qtyCol = idx;
+          break;
+        }
+      }
+      if (qtyCol === -1) {
+        toast.error('Не намерих колона "брой" в CSV файла.');
+        return;
+      }
+      let priceCol = -1;
+      for (const r of rows) {
+        const idx = r.findIndex((c) => normalizeMealName(c) === "цена");
+        if (idx !== -1) {
+          priceCol = idx;
+          break;
+        }
+      }
+      const mealNameCol = priceCol !== -1 ? Math.max(priceCol - 2, 0) : 3;
+
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        const mealName = r[mealNameCol];
+
+        const key = normalizeMealName(mealName);
+        if (!key) continue;
+
+        if (
+          key.includes("понеделник") ||
+          key.includes("вторник") ||
+          key.includes("сряда") ||
+          key.includes("четвъртък") ||
+          key.includes("петък") ||
+          key.includes("седмично меню")
+        ) {
+          continue;
+        }
+
+        const qty = totals[key] || 0;
+        r[qtyCol] = String(qty);
+      }
+
+      const csvOut = toCSV(rows);
+      const BOM = "\uFEFF";
+      const blob = new Blob([BOM + csvOut], { type: "text/csv;charset=utf-8" });
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = menu.menuFileName
+        ? `filled-${menu.menuFileName.replace(/\.csv$/i, "")}.csv`
+        : "menu-with-counts.csv";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+
+      toast.success("Меню CSV е изтеглено с попълнен брой.");
+    } catch (e) {
+      console.error(e);
+      toast.error("Грешка при експортиране на менюто.");
+    }
   };
 
   const fetchOrders = async () => {
@@ -224,13 +369,23 @@ const AdminOrdersPage = () => {
             </div>
           </div>
           {ordersData.length !== 0 && (
-            <ShinyButton
-              onClick={downloadFoodByClassCSV}
-              href="/"
-              className="p-2 mb-2 mt-2"
-            >
-              Изтегли поръчките
-            </ShinyButton>
+            <div className="flex gap-2">
+              <ShinyButton
+                onClick={downloadFoodByClassCSV}
+                href="/"
+                className="p-2 mb-2 mt-2"
+              >
+                Изтегли поръчките (по клас)
+              </ShinyButton>
+
+              <ShinyButton
+                onClick={downloadMenuWithCountsCSV}
+                href="/"
+                className="p-2 mb-2 mt-2"
+              >
+                Изтегли фактура за Бешамел
+              </ShinyButton>
+            </div>
           )}
 
           {error && <p className="text-red-500 mb-4">{error}</p>}

@@ -12,30 +12,17 @@ const daySchema = new mongoose.Schema({
     enum: ["Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък"],
     required: true,
   },
-  meals: {
-    type: [mealSchema],
-    default: [],
-  },
+  meals: { type: [mealSchema], default: [] },
 });
 
 const weeklyMenuSchema = new mongoose.Schema(
   {
-    weekStart: {
-      type: Date,
-      required: true,
-    },
-    weekEnd: {
-      type: Date,
-      required: true,
-    },
-    orderDeadline: {
-      type: Date,
-      required: true,
-    },
-    days: {
-      type: [daySchema],
-      default: [],
-    },
+    weekStart: { type: Date, required: true },
+    weekEnd: { type: Date, required: true },
+    orderDeadline: { type: Date, required: true },
+    days: { type: [daySchema], default: [] },
+    menuFile: { type: String, default: "" },
+    menuFileName: { type: String, default: "" },
   },
   { timestamps: true },
 );

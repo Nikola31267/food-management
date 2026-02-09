@@ -20,7 +20,8 @@ export async function POST(req) {
       );
     }
 
-    const { weekStart, weekEnd, days, orderDeadline } = await req.json();
+    const { weekStart, weekEnd, days, orderDeadline, menuFile, menuFileName } =
+      await req.json();
 
     if (!orderDeadline) {
       return NextResponse.json(
@@ -42,12 +43,15 @@ export async function POST(req) {
       weekEnd,
       orderDeadline: deadlineDate,
       days,
+
+      // ✅ store raw CSV text
+      menuFile: menuFile || "",
+      menuFileName: menuFileName || "",
     });
 
     return NextResponse.json(menu, { status: 201 });
   } catch (err) {
     console.error(err);
-
     return NextResponse.json({ message: err.message }, { status: 500 });
   }
 }
