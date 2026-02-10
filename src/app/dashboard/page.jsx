@@ -1,17 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { axiosInstance } from "@/lib/axios";
-import Loader from "@/components/layout/Loader";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ShinyButton } from "@/components/ui/shiny-button";
-import { toast } from "react-toastify";
 import axios from "axios";
-import Footer from "@/components/layout/Footer";
+import { toast } from "react-toastify";
 
-const Dashboard = () => {
+import Loader from "@/components/layout/Loader";
+import Footer from "@/components/layout/Footer";
+import { ShinyButton } from "@/components/ui/shiny-button";
+
+import { MenuHeader } from "@/components/menu/MenuHeader";
+import { DaySection } from "@/components/menu/DaySection";
+import { OrderBar } from "@/components/menu/OrderBar";
+
+export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [hasOrdered, setHasOrdered] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -21,11 +25,39 @@ const Dashboard = () => {
   const [weeklyOrder, setWeeklyOrder] = useState({});
   const [savedOrder, setSavedOrder] = useState(null);
 
+  const [activeDay, setActiveDay] = useState(null);
+
   const router = useRouter();
 
-  const totalPrice = Object.values(weeklyOrder)
-    .flat()
-    .reduce((sum, meal) => sum + meal.price * meal.quantity, 0);
+  const menuExpired =
+    menu?.orderDeadline && new Date(menu.orderDeadline) < new Date();
+
+  const hasMenu = menu?.days?.some((d) => (d.meals || []).length > 0);
+
+  const totalPrice = useMemo(() => {
+    return Object.values(weeklyOrder)
+      .flat()
+      .reduce((sum, meal) => sum + meal.price * meal.quantity, 0);
+  }, [weeklyOrder]);
+
+  const cartCount = useMemo(() => {
+    return Object.values(weeklyOrder)
+      .flat()
+      .reduce((sum, item) => sum + item.quantity, 0);
+  }, [weeklyOrder]);
+
+  useEffect(() => {
+    const fetchMenu = async () => {
+      try {
+        const res = await axios.get("/api/menu");
+        setMenu(res.data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchMenu();
+  }, []);
 
   useEffect(() => {
     const init = async () => {
@@ -38,8 +70,8 @@ const Dashboard = () => {
         });
 
         setUser(userRes.data);
-        const latestMenuId = menu?._id;
 
+        const latestMenuId = menu?._id;
         const userOrderForMenu = userRes.data.orders?.find(
           (o) => o.menuId === latestMenuId,
         );
@@ -60,19 +92,6 @@ const Dashboard = () => {
     init();
   }, [router, menu]);
 
-  useEffect(() => {
-    const fetchMenu = async () => {
-      try {
-        const res = await axios.get("/api/menu");
-        setMenu(res.data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    fetchMenu();
-  }, []);
-
   const handleLogout = () => {
     localStorage.removeItem("data-auth-eduiteh-food");
     window.location.reload();
@@ -83,83 +102,82 @@ const Dashboard = () => {
     return savedOrder.days.find((d) => d.day === dayName);
   };
 
-  const addMealToOrder = (day, meal) => {
-    if (hasOrdered || menuExpired) return;
+  const addMealToOrder = useCallback(
+    (day, meal) => {
+      if (hasOrdered || menuExpired) return;
 
-    const dayMeals = weeklyOrder[day] || [];
-    const existing = dayMeals.find((m) => m.mealId === meal._id);
+      setWeeklyOrder((prev) => {
+        const dayMeals = prev[day] || [];
+        const existing = dayMeals.find((m) => m.mealId === meal._id);
 
-    if (existing) {
-      toast.info(`Добавено още 1 × ${meal.name}`, {
-        toastId: `${meal._id}-increase`,
-      });
-    } else {
-      toast.success(`${meal.name} е добавено към поръчката!`, {
-        toastId: meal._id,
-      });
-    }
+        if (existing) {
+          return {
+            ...prev,
+            [day]: dayMeals.map((m) =>
+              m.mealId === meal._id ? { ...m, quantity: m.quantity + 1 } : m,
+            ),
+          };
+        }
 
-    setWeeklyOrder((prev) => {
-      const dayMeals = prev[day] || [];
-      const existing = dayMeals.find((m) => m.mealId === meal._id);
-
-      if (existing) {
         return {
           ...prev,
-          [day]: dayMeals.map((m) =>
-            m.mealId === meal._id ? { ...m, quantity: m.quantity + 1 } : m,
-          ),
+          [day]: [
+            ...dayMeals,
+            {
+              mealId: meal._id,
+              name: meal.name,
+              price: meal.price,
+              quantity: 1,
+            },
+          ],
         };
-      }
+      });
+    },
+    [hasOrdered, menuExpired],
+  );
 
-      return {
+  const increaseQuantity = useCallback(
+    (day, mealId) => {
+      if (menuExpired) return;
+
+      setWeeklyOrder((prev) => ({
         ...prev,
-        [day]: [
-          ...dayMeals,
-          {
-            mealId: meal._id,
-            name: meal.name,
-            price: meal.price,
-            quantity: 1,
-          },
-        ],
-      };
-    });
-  };
+        [day]: (prev[day] || []).map((m) =>
+          m.mealId === mealId ? { ...m, quantity: m.quantity + 1 } : m,
+        ),
+      }));
+    },
+    [menuExpired],
+  );
 
-  const increaseQuantity = (day, mealId) => {
-    if (menuExpired) return;
+  const decreaseQuantity = useCallback(
+    (day, mealId) => {
+      if (menuExpired) return;
 
-    setWeeklyOrder((prev) => ({
-      ...prev,
-      [day]: prev[day].map((m) =>
-        m.mealId === mealId ? { ...m, quantity: m.quantity + 1 } : m,
-      ),
-    }));
-  };
+      setWeeklyOrder((prev) => {
+        const updated = (prev[day] || [])
+          .map((m) =>
+            m.mealId === mealId ? { ...m, quantity: m.quantity - 1 } : m,
+          )
+          .filter((m) => m.quantity > 0);
 
-  const decreaseQuantity = (day, mealId) => {
-    if (menuExpired) return;
+        if (updated.length === 0) {
+          const copy = { ...prev };
+          delete copy[day];
+          return copy;
+        }
 
-    setWeeklyOrder((prev) => {
-      const updated = prev[day]
-        .map((m) =>
-          m.mealId === mealId ? { ...m, quantity: m.quantity - 1 } : m,
-        )
-        .filter((m) => m.quantity > 0);
-
-      if (updated.length === 0) {
-        const copy = { ...prev };
-        delete copy[day];
-        return copy;
-      }
-
-      return { ...prev, [day]: updated };
-    });
-  };
+        return { ...prev, [day]: updated };
+      });
+    },
+    [menuExpired],
+  );
 
   const submitWeeklyOrder = async () => {
     if (hasOrdered || menuExpired) return;
+    if (!Object.keys(weeklyOrder).length)
+      return toast.info("Няма избрани ястия.");
+
     setSubmiting(true);
 
     try {
@@ -190,253 +208,177 @@ const Dashboard = () => {
       setSavedOrder(newSavedOrder);
       setHasOrdered(true);
       setWeeklyOrder({});
-
       toast.success("Поръчката е изпратена!");
-      setSubmiting(false);
     } catch (err) {
       const message = err.response?.data?.error || "Failed to submit order";
       toast.error(message);
+    } finally {
+      setSubmiting(false);
     }
   };
 
-  const hasMenu = menu?.days?.some((day) => day.meals && day.meals.length > 0);
-  const menuExpired =
-    menu?.orderDeadline && new Date(menu.orderDeadline) < new Date();
+  const filteredDays = useMemo(() => {
+    if (!menu?.days) return [];
+    return activeDay ? menu.days.filter((d) => d.day === activeDay) : menu.days;
+  }, [menu, activeDay]);
 
   if (loading) return <Loader />;
 
   return (
     <>
-      <div className="min-h-screen bg-gray-100 p-8">
-        <div className="border-b mb-6 sm:mb-10">
-          <div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2 min-w-0">
-              <Link href="/dashboard" className="shrink-0">
-                <Image
-                  src="/logo-nobg.png"
-                  alt="Logo"
-                  width={40}
-                  height={40}
-                  className="sm:hidden"
-                  draggable={false}
-                />
-                <Image
-                  src="/logo-nobg.png"
-                  alt="Logo"
-                  width={48}
-                  height={48}
-                  className="hidden sm:block"
-                  draggable={false}
-                />
-              </Link>
+      <div className="min-h-screen bg-background">
+        <div className="mx-auto max-w-6xl px-4 pt-8 sm:px-6 lg:px-8">
+          <div className="border-b mb-6 sm:mb-10">
+            <div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <Link href="/dashboard" className="shrink-0">
+                  <Image
+                    src="/logo-nobg.png"
+                    alt="Logo"
+                    width={40}
+                    height={40}
+                    className="sm:hidden"
+                    draggable={false}
+                  />
+                  <Image
+                    src="/logo-nobg.png"
+                    alt="Logo"
+                    width={48}
+                    height={48}
+                    className="hidden sm:block"
+                    draggable={false}
+                  />
+                </Link>
 
-              <h1 className="min-w-0 truncate text-base sm:text-lg font-semibold">
-                {user?.fullName} {user?.grade}
-              </h1>
-            </div>
+                <h1 className="min-w-0 truncate text-base sm:text-lg font-semibold">
+                  {user?.fullName} {user?.grade}
+                </h1>
+              </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-              {user?.role === "admin" && (
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                {user?.role === "admin" && (
+                  <Link
+                    href="/admin"
+                    className="text-sm sm:text-base hover:underline hover:text-[#387fa5] transition-colors duration-200"
+                  >
+                    Admin
+                  </Link>
+                )}
                 <Link
-                  href="/admin"
+                  href="/dashboard/old-orders"
                   className="text-sm sm:text-base hover:underline hover:text-[#387fa5] transition-colors duration-200"
                 >
-                  Admin
+                  Стари поръчки
                 </Link>
-              )}
-              <Link
-                href="/dashboard/old-orders"
-                className="text-sm sm:text-base hover:underline hover:text-[#387fa5] transition-colors duration-200"
-              >
-                Стари поръчки
-              </Link>
 
-              <ShinyButton
-                className="bg-[#478BAF] hover:bg-[#387fa5] py-2 px-3 w-full sm:w-auto"
-                href="#"
-                onClick={handleLogout}
-              >
-                Излез от профила
-              </ShinyButton>
+                <ShinyButton
+                  className="bg-[#478BAF] hover:bg-[#387fa5] py-2 px-3 w-full sm:w-auto"
+                  href="#"
+                  onClick={handleLogout}
+                >
+                  Излез от профила
+                </ShinyButton>
+              </div>
             </div>
           </div>
         </div>
 
-        {!menu && (
-          <h1 className="text-xl font-bold text-center mb-4 text-gray-600">
-            Няма активно меню за седмицата
-          </h1>
-        )}
+        <MenuHeader
+          menu={menu}
+          activeDay={activeDay}
+          onDayChange={setActiveDay}
+          cartCount={cartCount}
+          hasOrdered={hasOrdered}
+          menuExpired={menuExpired}
+        />
 
-        {menu && (
-          <>
-            <h1 className="text-3xl font-bold text-center mb-4">
-              Меню за седмица:
+        <main className="mx-auto max-w-6xl px-4 py-10 pb-28 sm:px-6 lg:px-8">
+          {!menu && (
+            <h1 className="text-xl font-bold text-center mb-4 text-gray-600">
+              Няма активно меню за седмицата
             </h1>
-            <div className="flex flex-col text-center gap-2 text-gray-600">
-              <p>
-                {new Date(menu.weekStart).toLocaleDateString()} –{" "}
-                {new Date(menu.weekEnd).toLocaleDateString()}
-              </p>
-              <p>
-                Последна поръчка:{" "}
-                {new Date(menu.orderDeadline).toLocaleString("bg-BG", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
-            </div>
-          </>
-        )}
+          )}
 
-        {menuExpired && (
-          <p className="text-center text-red-600 font-semibold mb-8">
-            Поръчките за тази седмица са затворени
-          </p>
-        )}
-
-        {menu?.days.map((day) => {
-          const orderedDay = getOrderedDay(day.day);
-
-          return (
-            <div key={day.day} className="border rounded mb-6">
-              <h2 className="bg-gray-100 p-3 font-semibold text-lg">
-                {day.day}
-              </h2>
-
-              {hasOrdered ? (
-                <div className="p-4 bg-gray-50">
-                  {orderedDay ? (
-                    orderedDay.meals.map((meal, index) => (
-                      <div key={index} className="flex justify-between mb-2">
-                        <span>
-                          {meal.mealName} × {meal.quantity}
-                        </span>
-                        <span>€{meal.price * meal.quantity}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-500 text-sm">
-                      Няма поръчка за този ден
-                    </p>
-                  )}
-                </div>
-              ) : menuExpired ? (
-                <div className="p-4 text-center text-gray-500">
-                  Поръчването приключи
-                </div>
-              ) : (
-                <>
-                  <table className="w-full">
-                    <tbody>
-                      {day.meals.length === 0 ? (
-                        <tr>
-                          <td className="p-4 text-center text-gray-500">
-                            Няма зададена храна
-                          </td>
-                        </tr>
-                      ) : (
-                        day.meals.map((meal) => (
-                          <tr key={meal._id} className="border-t">
-                            <td className="p-2">{meal.name}</td>
-                            <td className="p-2">{meal.weight}</td>
-                            <td className="p-2">€{meal.price}</td>
-                            <td className="p-2 text-center">
-                              <button
-                                onClick={() => addMealToOrder(day.day, meal)}
-                                // className="bg-[#478BAF] text-white hover:bg-[#3a83ab] px-4 py-2 rounded-xl transition-colors duration-300"
-                                className="bg-gray-200 text-[#478BAF] hover:bg-gray-300 px-4 py-2 rounded-xl transition-colors duration-300 text-xl font-bold"
-                              >
-                                +
-                              </button>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-
-                  {weeklyOrder[day.day] && (
-                    <div className="p-3 bg-gray-50">
-                      {weeklyOrder[day.day].map((meal) => (
-                        <div key={meal.mealId} className="flex gap-3 mb-2">
-                          <span>{meal.name}</span>
-                          <button
-                            onClick={() =>
-                              decreaseQuantity(day.day, meal.mealId)
-                            }
-                          >
-                            -
-                          </button>
-                          <span>{meal.quantity}</span>
-                          <button
-                            onClick={() =>
-                              increaseQuantity(day.day, meal.mealId)
-                            }
-                          >
-                            +
-                          </button>
-                          <span className="ml-auto">
-                            €{meal.price * meal.quantity}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          );
-        })}
-
-        {!hasOrdered && hasMenu && !menuExpired && (
-          <div className="flex justify-center gap-6 mt-8">
-            <p className="text-xl font-bold">
-              Общо:{" "}
-              <span>
-                {new Intl.NumberFormat("de-DE", {
-                  style: "currency",
-                  currency: "EUR",
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                }).format(totalPrice)}
-              </span>
+          {menuExpired && (
+            <p className="text-center text-red-600 font-semibold mb-8">
+              Поръчките за тази седмица са затворени
             </p>
-            <ShinyButton
-              href="#"
-              disabled={submiting}
-              onClick={submitWeeklyOrder}
-            >
-              Поръчай
-            </ShinyButton>
-          </div>
-        )}
+          )}
 
-        {hasOrdered && savedOrder && (
-          <div className="text-center mt-8 text-xl font-bold">
-            Дължима сума:{" "}
-            {savedOrder?.paid ? (
-              <span>0 €</span>
-            ) : (
-              <span>
-                {new Intl.NumberFormat("de-DE", {
-                  style: "currency",
-                  currency: "EUR",
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                }).format(savedOrder.totalPrice)}
-              </span>
-            )}
-            <p>Платено: {savedOrder?.paid ? <>Да</> : <>Не</>}</p>
-          </div>
-        )}
+          {menu && (
+            <div className="flex flex-col gap-10">
+              {filteredDays.map((day) => (
+                <DaySection
+                  key={day.day}
+                  dayMenu={day}
+                  hasOrdered={hasOrdered}
+                  menuExpired={menuExpired}
+                  orderedDay={getOrderedDay(day.day)}
+                  selectedMeals={weeklyOrder[day.day] || []}
+                  onAddMeal={(meal) => addMealToOrder(day.day, meal)}
+                  onIncrease={(mealId) => increaseQuantity(day.day, mealId)}
+                  onDecrease={(mealId) => decreaseQuantity(day.day, mealId)}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* {!hasOrdered && hasMenu && !menuExpired && (
+            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
+              <p className="text-xl font-bold">
+                Общо:{" "}
+                <span>
+                  {new Intl.NumberFormat("de-DE", {
+                    style: "currency",
+                    currency: "EUR",
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }).format(totalPrice)}
+                </span>
+              </p>
+
+              <ShinyButton
+                href="#"
+                disabled={submiting}
+                onClick={submitWeeklyOrder}
+              >
+                Поръчай
+              </ShinyButton>
+            </div>
+          )} */}
+
+          <OrderBar
+            count={cartCount}
+            total={totalPrice}
+            disabled={hasOrdered || menuExpired}
+            submitting={submiting}
+            onSubmit={submitWeeklyOrder}
+          />
+
+          {hasOrdered && savedOrder && (
+            <div className="text-center mt-10 text-xl font-bold">
+              Дължима сума:{" "}
+              {savedOrder?.paid ? (
+                <span>0 €</span>
+              ) : (
+                <span>
+                  {new Intl.NumberFormat("de-DE", {
+                    style: "currency",
+                    currency: "EUR",
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }).format(savedOrder.totalPrice)}
+                </span>
+              )}
+              <p className="mt-1 text-base font-medium">
+                Платено: {savedOrder?.paid ? "Да" : "Не"}
+              </p>
+            </div>
+          )}
+        </main>
+
+        <Footer />
       </div>
-      <Footer />
     </>
   );
-};
-
-export default Dashboard;
+}

@@ -2,14 +2,17 @@
 
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
 import axios from "axios";
-import { Trash } from "lucide-react";
+import { RefreshCw, Trash } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Loader from "@/components/layout/Loader";
+import { Button } from "@/components/ui/button";
 
 export default function UnpaidPage() {
   const [user, setUser] = useState("");
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetching, setFetching] = useState(false);
   const [err, setErr] = useState("");
   const router = useRouter();
 
@@ -38,7 +41,7 @@ export default function UnpaidPage() {
   }, [router]);
 
   const fetchOrders = async () => {
-    setLoading(true);
+    setFetching(true);
     setErr("");
     try {
       const token = localStorage.getItem("data-auth-eduiteh-food");
@@ -52,7 +55,7 @@ export default function UnpaidPage() {
       setErr(e?.response?.data?.error || e?.message || "Network error");
       setOrders([]);
     } finally {
-      setLoading(false);
+      setFetching(false);
     }
   };
 
@@ -90,11 +93,11 @@ export default function UnpaidPage() {
             onClick={fetchOrders}
             variant="outline"
             size="icon"
-            disabled={fetchOrders}
+            disabled={fetching}
             className="border-border bg-[#478BAF] text-white hover:bg-[#317faa] hover:text-white transition-colors duration-300"
           >
             <RefreshCw
-              className={`h-4 w-4 ${fetchOrders ? "animate-spin" : ""}`}
+              className={`h-4 w-4 ${fetching ? "animate-spin" : ""}`}
             />
           </Button>
         </div>
@@ -137,8 +140,13 @@ export default function UnpaidPage() {
                       <td className="border px-3 py-2 text-sm">{o.name}</td>
                       <td className="border px-3 py-2 text-sm">{o.grade}</td>
                       <td className="border px-3 py-2 text-sm font-bold">
-                        {o.total} €
+                        {new Intl.NumberFormat("de-DE", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        }).format(o.total)}{" "}
+                        €
                       </td>
+
                       <td className="border px-3 py-2 text-sm">
                         <button
                           onClick={() => deleteOrder(o._id)}
