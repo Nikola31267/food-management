@@ -451,7 +451,7 @@ const AdminOrdersPage = () => {
                             <button
                               onClick={() => markAsPaid(user._id, week._id)}
                               disabled={submiting}
-                              className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                              className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-300"
                             >
                               {submiting ? (
                                 <Loader2 className="animate-spin" />
@@ -466,7 +466,7 @@ const AdminOrdersPage = () => {
                           <button
                             onClick={() => deleteOrder(user._id, week._id)}
                             disabled={submiting}
-                            className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                            className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors duration-300"
                           >
                             {submiting ? (
                               <Loader2 className="animate-spin" />

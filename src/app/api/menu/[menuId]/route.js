@@ -3,16 +3,12 @@ import { connectDB } from "@/lib/connectDB";
 import { verifyToken } from "@/lib/auth";
 import User from "@/models/User";
 import WeeklyMenu from "@/models/Menu";
-import OldOrder from "@/models/OldOrder";
-import Unpaid from "@/models/Unpaid"; // ✅ add this
+import Unpaid from "@/models/Unpaid";
 import { Parser } from "json2csv";
+import mongoose from "mongoose";
 
 function isOrderPaid(order) {
-  // ✅ supports a few common naming styles
   if (order?.paid === true) return true;
-  if (order?.isPaid === true) return true;
-  if (order?.paymentStatus === "paid") return true;
-  if (order?.status === "paid") return true;
   return false;
 }
 
@@ -23,11 +19,11 @@ export async function DELETE(req, { params }) {
     const decoded = verifyToken(req);
     const admin = await User.findById(decoded.id);
 
-    if (admin.role !== "admin") {
+    if (!admin || admin.role !== "admin") {
       return NextResponse.json({ message: "Not authorized" }, { status: 403 });
     }
 
-    const { menuId } = await params;
+    const { menuId } = params;
     const download = new URL(req.url).searchParams.get("download") === "true";
 
     const menu = await WeeklyMenu.findById(menuId).lean();
@@ -41,7 +37,6 @@ export async function DELETE(req, { params }) {
     ).lean();
 
     let csv;
-
     if (download) {
       const rows = [];
 
@@ -62,7 +57,7 @@ export async function DELETE(req, { params }) {
           .forEach((order) => {
             row.Total += order.totalPrice || 0;
 
-            order.days.forEach((day) => {
+            order.days?.forEach((day) => {
               row[day.day] =
                 day.meals
                   ?.map((m) => `${m.mealName} x${m.quantity}`)
@@ -89,21 +84,22 @@ export async function DELETE(req, { params }) {
       csv = parser.parse(rows);
     }
 
-    // ---- ARCHIVE ORDERS ----
-    const archiveDocs = usersWithOrders.map((u) => {
-      const matchingOrders = u.orders.filter(
+    const menuObjectId = new mongoose.Types.ObjectId(menuId);
+
+    const bulkOps = usersWithOrders.map((u) => {
+      const matchingOrders = (u.orders || []).filter(
         (o) => o.menuId.toString() === menuId,
       );
+
       const total = matchingOrders.reduce(
         (sum, o) => sum + (o.totalPrice || 0),
         0,
       );
 
-      return {
-        menuId,
+      const archiveDoc = {
+        menuId: menuObjectId,
         weekStart: menu.weekStart,
         weekEnd: menu.weekEnd,
-        userId: u._id,
         userEmail: u.email,
         userFullName: u.fullName,
         userGrade: u.grade,
@@ -111,17 +107,29 @@ export async function DELETE(req, { params }) {
         total,
         archivedAt: new Date(),
       };
+
+      return {
+        updateOne: {
+          filter: { _id: u._id },
+          update: {
+            $push: { archivedOrders: archiveDoc },
+            $pull: { orders: { menuId: menuObjectId } },
+          },
+        },
+      };
     });
 
-    if (archiveDocs.length) {
-      await OldOrder.insertMany(archiveDocs, { ordered: false });
+    if (bulkOps.length) {
+      await User.bulkWrite(bulkOps, { ordered: false });
     }
 
-    // ---- SAVE UNPAID (per user per menu) ----
-    // menuDate: store the "week" info in one field (adjust to your Unpaid schema preference)
     const menuDate =
       menu.weekStart && menu.weekEnd
-        ? `${new Date(menu.weekStart).toISOString().slice(0, 10)} - ${new Date(menu.weekEnd).toISOString().slice(0, 10)}`
+        ? `${new Date(menu.weekStart).toISOString().slice(0, 10)} - ${new Date(
+            menu.weekEnd,
+          )
+            .toISOString()
+            .slice(0, 10)}`
         : menu.weekStart
           ? new Date(menu.weekStart).toISOString().slice(0, 10)
           : String(menuId);
@@ -129,9 +137,10 @@ export async function DELETE(req, { params }) {
     const unpaidDocs = [];
 
     usersWithOrders.forEach((u) => {
-      const matchingOrders = u.orders.filter(
+      const matchingOrders = (u.orders || []).filter(
         (o) => o.menuId.toString() === menuId,
       );
+
       const unpaidTotal = matchingOrders
         .filter((o) => !isOrderPaid(o))
         .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
@@ -150,9 +159,7 @@ export async function DELETE(req, { params }) {
       await Unpaid.insertMany(unpaidDocs, { ordered: false });
     }
 
-    // ---- DELETE MENU + REMOVE ORDERS ----
     await WeeklyMenu.findByIdAndDelete(menuId);
-    await User.updateMany({}, { $pull: { orders: { menuId } } });
 
     if (download) {
       return new Response(csv, {
@@ -165,12 +172,13 @@ export async function DELETE(req, { params }) {
 
     return NextResponse.json({
       message: "Weekly menu deleted; orders archived.",
-      archivedCount: archiveDocs.length,
+      archivedCount: bulkOps.length,
       unpaidCount: unpaidDocs.length,
       unpaidSaved: unpaidDocs.length,
       menuDate,
     });
   } catch (err) {
+    console.error("DELETE /api/menu error:", err);
     return NextResponse.json({ message: err.message }, { status: 500 });
   }
 }

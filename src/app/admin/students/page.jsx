@@ -124,20 +124,20 @@ const page = () => {
             className="mb-4 p-3 border rounded-full w-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
           />
 
-         <div>
-           <select
-            value={gradeFilter}
-            onChange={(e) => setGradeFilter(e.target.value)}
-            className="w-full sm:w-40 p-3 border rounded-full focus:outline-none focus:ring-[#478BAF]"
-          >
-            <option value="">Всички класове</option>
-            {grades.map((g) => (
-              <option key={g} value={g}>
-                Клас {g}
-              </option>
-            ))}
-          </select>
-         </div>
+          <div>
+            <select
+              value={gradeFilter}
+              onChange={(e) => setGradeFilter(e.target.value)}
+              className="w-full sm:w-40 p-3 border rounded-full focus:outline-none focus:ring-[#478BAF]"
+            >
+              <option value="">Всички класове</option>
+              {grades.map((g) => (
+                <option key={g} value={g}>
+                  Клас {g}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="border rounded-lg overflow-hidden bg-white">
@@ -169,7 +169,7 @@ const page = () => {
                         type="button"
                         onClick={() => deleteStudent(s._id)}
                         disabled={deletingId === s._id}
-                        className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                        className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors duration-300"
                         title="Delete student"
                       >
                         {submiting ? (

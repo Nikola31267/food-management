@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/connectDB";
 import User from "@/models/User";
-import OldOrder from "@/models/OldOrder";
 import { verifyToken } from "@/lib/auth";
 
 export async function GET(req) {
@@ -19,19 +18,32 @@ export async function GET(req) {
     const from = url.searchParams.get("from");
     const to = url.searchParams.get("to");
 
-    const filter = { userId: me._id };
+    const fromDate = from ? new Date(from) : null;
+    const toDate = to ? new Date(to) : null;
 
-    if (from || to) {
-      filter.weekStart = {};
-      if (from) filter.weekStart.$gte = new Date(from);
-      if (to) filter.weekStart.$lte = new Date(to);
+    let archived = me.archivedOrders || [];
+
+    if (fromDate || toDate) {
+      archived = archived.filter((o) => {
+        const ws = o.weekStart ? new Date(o.weekStart) : null;
+        if (!ws) return false;
+        if (fromDate && ws < fromDate) return false;
+        if (toDate && ws > toDate) return false;
+        return true;
+      });
     }
 
-    const oldOrders = await OldOrder.find(filter)
-      .sort({ weekStart: -1, archivedAt: -1 })
-      .lean();
+    archived.sort((a, b) => {
+      const aWs = a.weekStart ? new Date(a.weekStart).getTime() : 0;
+      const bWs = b.weekStart ? new Date(b.weekStart).getTime() : 0;
+      if (bWs !== aWs) return bWs - aWs;
 
-    return NextResponse.json({ oldOrders });
+      const aAt = a.archivedAt ? new Date(a.archivedAt).getTime() : 0;
+      const bAt = b.archivedAt ? new Date(b.archivedAt).getTime() : 0;
+      return bAt - aAt;
+    });
+
+    return NextResponse.json({ oldOrders: archived });
   } catch (err) {
     return NextResponse.json({ message: err.message }, { status: 500 });
   }

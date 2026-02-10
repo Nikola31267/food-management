@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/connectDB";
 import { verifyToken } from "@/lib/auth";
-import OldOrder from "@/models/OldOrder";
 import WeeklyMenu from "@/models/Menu";
 import User from "@/models/User";
+import Unpaid from "@/models/Unpaid";
+import mongoose from "mongoose";
+
+function isOrderPaid(order) {
+  if (order?.paid === true) return true;
+  if (order?.isPaid === true) return true;
+  if (order?.paymentStatus === "paid") return true;
+  if (order?.status === "paid") return true;
+  return false;
+}
 
 export async function DELETE(req, { params }) {
   await connectDB();
@@ -16,60 +25,81 @@ export async function DELETE(req, { params }) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    const { userId, orderId } = await params;
-    const menuId = new URL(req.url).searchParams.get("menuId");
-    console.log(menuId);
+    const { userId, orderId } = params;
+
+    const menuIdStr = new URL(req.url).searchParams.get("menuId");
+    const menuObjectId =
+      menuIdStr && mongoose.Types.ObjectId.isValid(menuIdStr)
+        ? new mongoose.Types.ObjectId(menuIdStr)
+        : null;
 
     const user = await User.findById(userId);
-    if (!user)
+    if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
-
-    const menu = await WeeklyMenu.findById(menuId).lean();
-    if (!menu) {
-      return NextResponse.json({ message: "Menu not found" }, { status: 404 });
     }
 
-    const usersWithOrders = await User.find(
-      { "orders.menuId": menuId },
-      { email: 1, fullName: 1, grade: 1, orders: 1 },
-    ).lean();
+    const order = user.orders?.id(orderId);
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
 
-    const archiveDocs = usersWithOrders.map((u) => {
-      const matchingOrders = u.orders.filter(
-        (o) => o.menuId.toString() === menuId,
-      );
+    const effectiveMenuId = menuObjectId || order.menuId;
 
-      const total = matchingOrders.reduce(
-        (sum, o) => sum + (o.totalPrice || 0),
-        0,
-      );
+    const menu = effectiveMenuId
+      ? await WeeklyMenu.findById(effectiveMenuId).lean()
+      : null;
 
-      return {
-        menuId,
-        weekStart: menu.weekStart,
-        weekEnd: menu.weekEnd,
-        userId: u._id,
-        userEmail: u.email,
-        userFullName: u.fullName,
-        userGrade: u.grade,
-        orders: matchingOrders,
-        total,
-        archivedAt: new Date(),
-      };
+    // --- Build menuDate exactly like the big delete ---
+    const menuDate =
+      menu?.weekStart && menu?.weekEnd
+        ? `${new Date(menu.weekStart).toISOString().slice(0, 10)} - ${new Date(
+            menu.weekEnd,
+          )
+            .toISOString()
+            .slice(0, 10)}`
+        : menu?.weekStart
+          ? new Date(menu.weekStart).toISOString().slice(0, 10)
+          : String(effectiveMenuId);
+
+    // --- If unpaid, save to Unpaid like in big delete ---
+    const unpaidTotal = !isOrderPaid(order) ? order.totalPrice || 0 : 0;
+
+    if (unpaidTotal > 0) {
+      await Unpaid.create({
+        name: user.fullName || "—",
+        grade: user.grade || "—",
+        total: unpaidTotal,
+        menuDate,
+      });
+    }
+
+    // --- Archive the order into user.archivedOrders ---
+    user.archivedOrders.push({
+      menuId: effectiveMenuId,
+      weekStart: menu?.weekStart,
+      weekEnd: menu?.weekEnd,
+      userEmail: user.email,
+      userFullName: user.fullName,
+      userGrade: user.grade,
+      orders: [order.toObject()],
+      total: order.totalPrice || 0,
+      archivedAt: new Date(),
     });
 
-    if (archiveDocs.length) {
-      await OldOrder.insertMany(archiveDocs, { ordered: false });
-    }
-
-    user.orders = user.orders.filter((o) => o._id.toString() !== orderId);
+    // --- Delete the order ---
+    order.deleteOne();
     await user.save();
 
-    return NextResponse.json({ message: "Order deleted successfully" });
+    return NextResponse.json({
+      message: "Order deleted successfully",
+      unpaidSaved: unpaidTotal > 0,
+      unpaidTotal,
+      menuDate,
+    });
   } catch (err) {
-    console.error(err);
+    console.error("Admin delete order error:", err);
     return NextResponse.json(
-      { error: "Failed to delete order" },
+      { error: err.message || "Failed to delete order" },
       { status: 500 },
     );
   }

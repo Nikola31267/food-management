@@ -10,6 +10,7 @@ import {
   LogOut,
   Menu as MenuIcon,
   X,
+  Euro,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -21,6 +22,7 @@ const navigation = [
   { name: "Статистика", href: "/admin/statistics", icon: BarChart3 },
   { name: "Меню", href: "/admin/menu", icon: Utensils },
   { name: "Поръчки", href: "/admin/orders", icon: ClipboardList },
+  { name: "Неплатени поръчки", href: "/admin/unpaid", icon: Euro },
   { name: "Ученици", href: "/admin/students", icon: Users },
 ];
 
