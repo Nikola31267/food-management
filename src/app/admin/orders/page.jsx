@@ -99,9 +99,9 @@ const AdminOrdersPage = () => {
       .map((row) =>
         row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
       )
-      .join("\r\n"); // <-- important for Excel
+      .join("\r\n");
 
-    const BOM = "\uFEFF"; // <-- critical for Excel UTF-8 detection
+    const BOM = "\uFEFF";
 
     const blob = new Blob([BOM + csvContent], {
       type: "text/csv;charset=utf-8",
@@ -127,24 +127,40 @@ const AdminOrdersPage = () => {
         return;
       }
 
-      const DAY_KEYS = ["Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък"];
-
-      const toDayKey = (s) => {
-        const t = normalizeMealName(s);
-        return DAY_KEYS.find((d) => t.includes(d)) || null;
+      // --- Day detection that works with your CSV + possible English days in ordersData ---
+      const DAY_BG = ["понеделник", "вторник", "сряда", "четвъртък", "петък"];
+      const DAY_ALIASES = {
+        monday: "понеделник",
+        tuesday: "вторник",
+        wednesday: "сряда",
+        thursday: "четвъртък",
+        friday: "петък",
+        понеделник: "понеделник",
+        вторник: "вторник",
+        сряда: "сряда",
+        четвъртък: "четвъртък",
+        петък: "петък",
       };
 
-      const totalsByDay = Object.fromEntries(DAY_KEYS.map((d) => [d, {}]));
+      const detectDayKey = (text) => {
+        const t = normalizeMealName(text);
+        for (const d of DAY_BG) if (t.includes(d)) return d;
+        return DAY_ALIASES[t] || null;
+      };
+
+      // --- Build totals per day ---
+      const totalsByDay = Object.fromEntries(DAY_BG.map((d) => [d, {}]));
 
       ordersData.forEach((user) => {
         user.orders.forEach((week) => {
           week.days.forEach((day) => {
-            const dayKey = toDayKey(day.day) || normalizeMealName(day.day); // handles "Понеделник" etc.
-            if (!totalsByDay[dayKey]) totalsByDay[dayKey] = {};
+            const dayKey = detectDayKey(day.day);
+            if (!dayKey) return;
 
             day.meals.forEach((meal) => {
               const key = normalizeMealName(meal.mealName);
               if (!key) return;
+
               totalsByDay[dayKey][key] =
                 (totalsByDay[dayKey][key] || 0) + (meal.quantity || 0);
             });
@@ -152,6 +168,7 @@ const AdminOrdersPage = () => {
         });
       });
 
+      // --- CSV parsing/writing ---
       const parseCSV = (text) => {
         const rows = [];
         let row = [];
@@ -202,55 +219,62 @@ const AdminOrdersPage = () => {
 
       const rows = parseCSV(menu.menuFile);
 
+      // Find columns from the header row that contains both "цена" and "брой"
+      let priceCol = -1;
       let qtyCol = -1;
+
       for (const r of rows) {
-        const idx = r.findIndex((c) => normalizeMealName(c) === "брой");
-        if (idx !== -1) {
-          qtyCol = idx;
+        const p = r.findIndex((c) => normalizeMealName(c) === "цена");
+        const q = r.findIndex((c) => normalizeMealName(c) === "брой");
+        if (p !== -1 && q !== -1) {
+          priceCol = p;
+          qtyCol = q;
           break;
         }
+      }
+
+      if (priceCol === -1) {
+        toast.error('Не намерих колона "цена" в CSV файла.');
+        return;
       }
       if (qtyCol === -1) {
         toast.error('Не намерих колона "брой" в CSV файла.');
         return;
       }
-      let priceCol = -1;
-      for (const r of rows) {
-        const idx = r.findIndex((c) => normalizeMealName(c) === "цена");
-        if (idx !== -1) {
-          priceCol = idx;
-          break;
-        }
-      }
-      const mealNameCol = priceCol !== -1 ? Math.max(priceCol - 2, 0) : 3;
 
+      // In your CSV: meal name is 2 columns before "цена"
+      const mealNameCol = Math.max(priceCol - 2, 0);
+
+      // Fill per-day counts based on which day section we are in
       let currentDay = null;
 
       for (let i = 0; i < rows.length; i++) {
         const r = rows[i];
-        const mealName = r[mealNameCol];
-        const key = normalizeMealName(mealName);
 
-        if (!key) continue;
+        const cellText = r[mealNameCol];
+        const norm = normalizeMealName(cellText);
 
-        // If this row is a day header row -> update currentDay and DO NOT write qty
-        const detectedDay = DAY_KEYS.find((d) => key.includes(d));
+        if (!norm) continue;
+
+        // Detect day header row (e.g. "Понеделник -16.02.2026г.")
+        const detectedDay = detectDayKey(cellText);
         if (detectedDay) {
           currentDay = detectedDay;
           continue;
         }
 
-        // If CSV has "Седмично меню" or other headers
-        if (key.includes("седмично меню")) {
+        // Weekly header / reset
+        if (norm.includes("седмично меню")) {
           currentDay = null;
           continue;
         }
 
-        // If we are not inside a day section, skip writing
+        // Not inside a day section => skip
         if (!currentDay) continue;
 
-        // Write quantity for this specific day + meal
-        const qty = totalsByDay[currentDay]?.[key] || 0;
+        // Meal row => fill "брой" with total for this day + meal
+        const mealKey = norm;
+        const qty = totalsByDay[currentDay]?.[mealKey] || 0;
         r[qtyCol] = String(qty);
       }
 
