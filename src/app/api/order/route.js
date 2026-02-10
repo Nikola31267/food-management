@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/connectDB";
 import { verifyToken } from "@/lib/auth";
 import User from "@/models/User";
 import WeeklyMenu from "@/models/Menu";
+import TopMeal from "@/models/TopMeal";
 
 export async function POST(req) {
   await connectDB();
@@ -85,6 +86,23 @@ export async function POST(req) {
 
     user.orders.push(weeklyOrderObj);
     await user.save();
+
+    const allMeals = weeklyOrderObj.days.flatMap((d) => d.meals);
+
+    if (allMeals.length) {
+      const ops = allMeals.map((m) => ({
+        updateOne: {
+          filter: { mealId: m.mealId },
+          update: {
+            $setOnInsert: { mealId: m.mealId, mealName: m.mealName },
+            $inc: { count: m.quantity },
+          },
+          upsert: true,
+        },
+      }));
+
+      await TopMeal.bulkWrite(ops, { ordered: false });
+    }
 
     return NextResponse.json({
       message: "Order saved successfully",
