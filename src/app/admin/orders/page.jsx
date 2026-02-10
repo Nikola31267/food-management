@@ -127,7 +127,6 @@ const AdminOrdersPage = () => {
         return;
       }
 
-      // --- Day detection that works with your CSV + possible English days in ordersData ---
       const DAY_BG = ["понеделник", "вторник", "сряда", "четвъртък", "петък"];
       const DAY_ALIASES = {
         monday: "понеделник",
@@ -148,7 +147,6 @@ const AdminOrdersPage = () => {
         return DAY_ALIASES[t] || null;
       };
 
-      // --- Build totals per day ---
       const totalsByDay = Object.fromEntries(DAY_BG.map((d) => [d, {}]));
 
       ordersData.forEach((user) => {
@@ -168,7 +166,6 @@ const AdminOrdersPage = () => {
         });
       });
 
-      // --- CSV parsing/writing ---
       const parseCSV = (text) => {
         const rows = [];
         let row = [];
@@ -219,7 +216,6 @@ const AdminOrdersPage = () => {
 
       const rows = parseCSV(menu.menuFile);
 
-      // Find columns from the header row that contains both "цена" and "брой"
       let priceCol = -1;
       let qtyCol = -1;
 
@@ -242,10 +238,8 @@ const AdminOrdersPage = () => {
         return;
       }
 
-      // In your CSV: meal name is 2 columns before "цена"
       const mealNameCol = Math.max(priceCol - 2, 0);
 
-      // Fill per-day counts based on which day section we are in
       let currentDay = null;
 
       for (let i = 0; i < rows.length; i++) {
@@ -256,23 +250,19 @@ const AdminOrdersPage = () => {
 
         if (!norm) continue;
 
-        // Detect day header row (e.g. "Понеделник -16.02.2026г.")
         const detectedDay = detectDayKey(cellText);
         if (detectedDay) {
           currentDay = detectedDay;
           continue;
         }
 
-        // Weekly header / reset
         if (norm.includes("седмично меню")) {
           currentDay = null;
           continue;
         }
 
-        // Not inside a day section => skip
         if (!currentDay) continue;
 
-        // Meal row => fill "брой" with total for this day + meal
         const mealKey = norm;
         const qty = totalsByDay[currentDay]?.[mealKey] || 0;
         r[qtyCol] = String(qty);

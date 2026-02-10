@@ -57,7 +57,7 @@ export default function UnpaidPage() {
   };
 
   const deleteOrder = async (id) => {
-    if (!confirm("Delete this unpaid order?")) return;
+    if (!confirm("Искате ли да изтриете неплатения запис?")) return;
 
     try {
       const token = localStorage.getItem("data-auth-eduiteh-food");
@@ -76,23 +76,28 @@ export default function UnpaidPage() {
     fetchOrders();
   }, []);
 
+  if (loading) return <Loader />;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <SidebarNav user={user} />
 
       <main className="lg:pl-64 p-6 ml-6">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold">Unpaid Orders</h1>
+          <h1 className="text-2xl font-bold">Неплатени Поръчки</h1>
 
-          <button
+          <Button
             onClick={fetchOrders}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            variant="outline"
+            size="icon"
+            disabled={fetchOrders}
+            className="border-border bg-[#478BAF] text-white hover:bg-[#317faa] hover:text-white transition-colors duration-300"
           >
-            Refresh
-          </button>
+            <RefreshCw
+              className={`h-4 w-4 ${fetchOrders ? "animate-spin" : ""}`}
+            />
+          </Button>
         </div>
-
-        {loading && <p className="mt-4 text-sm text-gray-600">Loading...</p>}
 
         {err && <p className="mt-4 text-sm text-red-600">{err}</p>}
 
@@ -123,7 +128,7 @@ export default function UnpaidPage() {
                       colSpan={4}
                       className="border px-3 py-4 text-center text-sm text-gray-500"
                     >
-                      No unpaid orders.
+                      Няма неплатени поръчки.
                     </td>
                   </tr>
                 ) : (
