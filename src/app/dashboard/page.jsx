@@ -293,18 +293,6 @@ export default function Dashboard() {
         />
 
         <main className="mx-auto max-w-6xl px-4 py-10 pb-28 sm:px-6 lg:px-8">
-          {!menu && (
-            <h1 className="text-xl font-bold text-center mb-4 text-gray-600">
-              Няма активно меню за седмицата
-            </h1>
-          )}
-
-          {menuExpired && (
-            <p className="text-center text-red-600 font-semibold mb-8">
-              Поръчките за тази седмица са затворени
-            </p>
-          )}
-
           {menu && (
             <div className="flex flex-col gap-10">
               {filteredDays.map((day) => (
