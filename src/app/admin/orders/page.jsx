@@ -127,14 +127,26 @@ const AdminOrdersPage = () => {
         return;
       }
 
-      const totals = {};
+      const DAY_KEYS = ["Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък"];
+
+      const toDayKey = (s) => {
+        const t = normalizeMealName(s);
+        return DAY_KEYS.find((d) => t.includes(d)) || null;
+      };
+
+      const totalsByDay = Object.fromEntries(DAY_KEYS.map((d) => [d, {}]));
 
       ordersData.forEach((user) => {
         user.orders.forEach((week) => {
           week.days.forEach((day) => {
+            const dayKey = toDayKey(day.day) || normalizeMealName(day.day); // handles "Понеделник" etc.
+            if (!totalsByDay[dayKey]) totalsByDay[dayKey] = {};
+
             day.meals.forEach((meal) => {
               const key = normalizeMealName(meal.mealName);
-              totals[key] = (totals[key] || 0) + (meal.quantity || 0);
+              if (!key) return;
+              totalsByDay[dayKey][key] =
+                (totalsByDay[dayKey][key] || 0) + (meal.quantity || 0);
             });
           });
         });
@@ -212,25 +224,33 @@ const AdminOrdersPage = () => {
       }
       const mealNameCol = priceCol !== -1 ? Math.max(priceCol - 2, 0) : 3;
 
+      let currentDay = null;
+
       for (let i = 0; i < rows.length; i++) {
         const r = rows[i];
         const mealName = r[mealNameCol];
-
         const key = normalizeMealName(mealName);
+
         if (!key) continue;
 
-        if (
-          key.includes("понеделник") ||
-          key.includes("вторник") ||
-          key.includes("сряда") ||
-          key.includes("четвъртък") ||
-          key.includes("петък") ||
-          key.includes("седмично меню")
-        ) {
+        // If this row is a day header row -> update currentDay and DO NOT write qty
+        const detectedDay = DAY_KEYS.find((d) => key.includes(d));
+        if (detectedDay) {
+          currentDay = detectedDay;
           continue;
         }
 
-        const qty = totals[key] || 0;
+        // If CSV has "Седмично меню" or other headers
+        if (key.includes("седмично меню")) {
+          currentDay = null;
+          continue;
+        }
+
+        // If we are not inside a day section, skip writing
+        if (!currentDay) continue;
+
+        // Write quantity for this specific day + meal
+        const qty = totalsByDay[currentDay]?.[key] || 0;
         r[qtyCol] = String(qty);
       }
 
