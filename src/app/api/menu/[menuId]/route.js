@@ -182,3 +182,77 @@ export async function DELETE(req, { params }) {
     return NextResponse.json({ message: err.message }, { status: 500 });
   }
 }
+
+export async function PUT(req, { params }) {
+  await connectDB();
+
+  try {
+    const decoded = verifyToken(req);
+    const admin = await User.findById(decoded.id);
+
+    if (!admin || admin.role !== "admin") {
+      return NextResponse.json({ message: "Not authorized" }, { status: 403 });
+    }
+
+    const { menuId } = params;
+    if (!mongoose.Types.ObjectId.isValid(menuId)) {
+      return NextResponse.json({ message: "Invalid menu id" }, { status: 400 });
+    }
+
+    const body = await req.json();
+
+    // Basic validation (keep it light, your UI already formats well)
+    if (!body?.orderDeadline) {
+      return NextResponse.json(
+        { message: "orderDeadline is required" },
+        { status: 400 },
+      );
+    }
+
+    // Normalize/clean days/meals the same way your frontend builds them
+    const days = Array.isArray(body.days) ? body.days : [];
+    const normalizedDays = days.map((d) => ({
+      day: String(d.day || "").trim(),
+      meals: (Array.isArray(d.meals) ? d.meals : [])
+        .filter((m) => String(m?.name || "").trim())
+        .map((m) => ({
+          name: String(m.name || "").trim(),
+          weight: String(m.weight || "").trim(),
+          price:
+            m.price === "" || m.price == null
+              ? null
+              : Number(String(m.price).replace(",", ".")),
+        })),
+    }));
+
+    const updateDoc = {
+      weekStart: body.weekStart ? new Date(body.weekStart) : null,
+      weekEnd: body.weekEnd ? new Date(body.weekEnd) : null,
+      orderDeadline: new Date(body.orderDeadline),
+      days: normalizedDays,
+    };
+
+    // If you store CSV in the menu document, allow updating it too
+    // (Frontend PUT currently does NOT send these, but this supports it if you decide to)
+    if (typeof body.menuFile === "string") updateDoc.menuFile = body.menuFile;
+    if (typeof body.menuFileName === "string")
+      updateDoc.menuFileName = body.menuFileName;
+
+    const updated = await WeeklyMenu.findByIdAndUpdate(menuId, updateDoc, {
+      new: true,
+      runValidators: true,
+    }).lean();
+
+    if (!updated) {
+      return NextResponse.json({ message: "Menu not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      message: "Menu updated successfully",
+      menu: updated,
+    });
+  } catch (err) {
+    console.error("PUT /api/menu/:menuId error:", err);
+    return NextResponse.json({ message: err.message }, { status: 500 });
+  }
+}
