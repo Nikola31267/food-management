@@ -15,7 +15,7 @@ export default function DailyOrdersPage() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [menu, setMenu] = useState(null);
-  const menuId = menu?.id;
+  const [menuId, setMenuId] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -23,6 +23,7 @@ export default function DailyOrdersPage() {
       try {
         const res = await axios.get("/api/menu");
         setMenu(res.data);
+        setMenuId(res.data?._id);
       } catch (err) {
         console.error(err);
       }
@@ -134,7 +135,6 @@ export default function DailyOrdersPage() {
 
     try {
       const current = dayMap.find((d) => d.day === day);
-
       await axios.put(
         `/api/verify-count/${encodeURIComponent(day)}`,
         {
