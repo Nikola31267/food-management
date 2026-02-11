@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShoppingCart, DollarSign, CreditCard, Euro } from "lucide-react";
+import { ShoppingCart, CreditCard, Euro, AlertCircle } from "lucide-react";
 
 function formatInt(value) {
   return Number(value || 0).toLocaleString("eu-EU");
@@ -43,7 +43,10 @@ export function StatsCards() {
     paidOrders: 0,
     unpaidOrders: 0,
     totalRevenue: 0,
+    paidRevenue: 0,
+    unpaidRevenue: 0,
   });
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,15 +56,17 @@ export function StatsCards() {
       try {
         setLoading(true);
         const { data } = await axios.get("/api/statistics");
+
         if (!mounted) return;
-        setSummary(
-          data?.summary || {
-            totalOrders: 0,
-            paidOrders: 0,
-            unpaidOrders: 0,
-            totalRevenue: 0,
-          },
-        );
+
+        setSummary({
+          totalOrders: data?.summary?.totalOrders ?? 0,
+          paidOrders: data?.summary?.paidOrders ?? 0,
+          unpaidOrders: data?.summary?.unpaidOrders ?? 0,
+          totalRevenue: data?.summary?.totalRevenue ?? 0,
+          paidRevenue: data?.summary?.paidRevenue ?? 0,
+          unpaidRevenue: data?.summary?.unpaidRevenue ?? 0,
+        });
       } catch (e) {
         console.error("Failed to fetch /api/statistics:", e);
       } finally {
@@ -80,27 +85,36 @@ export function StatsCards() {
       title: "Всички поръчки",
       value: loading ? "…" : formatInt(summary.totalOrders),
       icon: <ShoppingCart className="h-4 w-4" />,
-      change: null,
-      trend: null,
     },
     {
-      title: "Обща цена",
+      title: "Общ приход",
       value: loading ? "…" : formatMoneyEuro(summary.totalRevenue),
       icon: <Euro className="h-4 w-4" />,
-      change: null,
-      trend: null,
     },
     {
       title: "Платени поръчки",
       value: loading ? "…" : formatInt(summary.paidOrders),
       icon: <CreditCard className="h-4 w-4" />,
-      change: null,
-      trend: null,
+    },
+    {
+      title: "Неплатени поръчки",
+      value: loading ? "…" : formatInt(summary.unpaidOrders),
+      icon: <AlertCircle className="h-4 w-4" />,
+    },
+    {
+      title: "Платен приход",
+      value: loading ? "…" : formatMoneyEuro(summary.paidRevenue),
+      icon: <Euro className="h-4 w-4 text-green-500" />,
+    },
+    {
+      title: "Неплатен приход",
+      value: loading ? "…" : formatMoneyEuro(summary.unpaidRevenue),
+      icon: <Euro className="h-4 w-4 text-red-500" />,
     },
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {stats.map((stat) => (
         <StatCard key={stat.title} {...stat} />
       ))}
