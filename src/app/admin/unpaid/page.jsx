@@ -17,37 +17,42 @@ export default function UnpaidPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const init = async () => {
-      try {
-        const token = localStorage.getItem("data-auth-eduiteh-food");
-        if (!token) return router.push("/sign-in");
-
-        const userRes = await axios.get("/api/auth/user", {
-          headers: { "x-auth-token": token },
-        });
-
-        if (userRes.data.role !== "admin") {
-          router.push("/dashboard");
-          return;
+    const fetchUserProfile = async () => {
+      if (localStorage.getItem("data-auth-eduiteh-food")) {
+        try {
+          const response = await axios.get("/api/auth/user", {
+            headers: {
+              "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+            },
+          });
+          setUser(response.data);
+          if (response.data.role == "admin") {
+            router.push("/admin/statistics");
+          }
+        } catch (error) {
+          setErr("Error fetching user profile");
+          console.error(error);
+        } finally {
+          setLoading(false);
         }
-
-        setUser(userRes.data);
-      } finally {
+      } else {
         setLoading(false);
+        setUser(null);
+        router.push("/dashboard");
       }
     };
 
-    init();
-  }, [router]);
+    fetchUserProfile();
+  }, []);
 
   const fetchOrders = async () => {
     setFetching(true);
     setErr("");
     try {
-      const token = localStorage.getItem("data-auth-eduiteh-food");
-
       const res = await axios.get("/api/unpaid", {
-        headers: { "x-auth-token": token },
+        headers: {
+          "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+        },
       });
 
       setOrders(Array.isArray(res.data) ? res.data : []);
@@ -63,10 +68,10 @@ export default function UnpaidPage() {
     if (!confirm("Искате ли да изтриете неплатения запис?")) return;
 
     try {
-      const token = localStorage.getItem("data-auth-eduiteh-food");
-
       await axios.delete(`/api/unpaid?id=${id}`, {
-        headers: { "x-auth-token": token },
+        headers: {
+          "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+        },
       });
 
       fetchOrders();

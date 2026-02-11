@@ -19,47 +19,34 @@ const page = () => {
 
   const router = useRouter();
 
-  const token = useMemo(() => {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("data-auth-eduiteh-food");
-  }, []);
-
-  const authHeaders = useMemo(() => {
-    if (!token) return {};
-    return { "x-auth-token": token };
-  }, [token]);
-
   useEffect(() => {
-    const init = async () => {
-      try {
-        if (!token) return router.push("/sign-in");
-
-        const userRes = await axios.get("/api/auth/user", {
-          headers: authHeaders,
-        });
-
-        if (userRes.data.role !== "admin") {
-          router.push("/dashboard");
-          return;
+    const fetchUserProfile = async () => {
+      if (localStorage.getItem("data-auth-eduiteh-food")) {
+        try {
+          const response = await axios.get("/api/auth/user", {
+            headers: {
+              "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+            },
+          });
+          setUser(response.data);
+          if (response.data.role == "admin") {
+            router.push("/admin/statistics");
+          }
+        } catch (error) {
+          setError("Error fetching user profile");
+          console.error(error);
+        } finally {
+          setLoading(false);
         }
-
-        setUser(userRes.data);
-
-        setLoadingStudents(true);
-        const studentsRes = await axios.get("/api/students/get", {
-          headers: authHeaders,
-        });
-        setStudents(studentsRes.data || []);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoadingStudents(false);
+      } else {
         setLoading(false);
+        setUser(null);
+        router.push("/dashboard");
       }
     };
 
-    init();
-  }, [router, token, authHeaders]);
+    fetchUserProfile();
+  }, []);
 
   const deleteStudent = async (id) => {
     if (!id) return;
@@ -73,7 +60,9 @@ const page = () => {
 
       await axios.delete("/api/students/delete", {
         data: { id },
-        headers: authHeaders,
+        headers: {
+          "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+        },
       });
 
       setStudents((prev) => prev.filter((s) => s._id !== id));

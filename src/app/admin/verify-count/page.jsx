@@ -33,28 +33,33 @@ export default function DailyOrdersPage() {
   }, []);
 
   useEffect(() => {
-    const init = async () => {
-      try {
-        const token = localStorage.getItem("data-auth-eduiteh-food");
-        if (!token) return router.push("/sign-in");
-
-        const userRes = await axios.get("/api/auth/user", {
-          headers: { "x-auth-token": token },
-        });
-
-        if (userRes.data.role !== "admin") {
-          router.push("/dashboard");
-          return;
+    const fetchUserProfile = async () => {
+      if (localStorage.getItem("data-auth-eduiteh-food")) {
+        try {
+          const response = await axios.get("/api/auth/user", {
+            headers: {
+              "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+            },
+          });
+          setUser(response.data);
+          if (response.data.role == "admin") {
+            router.push("/admin/statistics");
+          }
+        } catch (error) {
+          setErr("Error fetching user profile");
+          console.error(error);
+        } finally {
+          setLoading(false);
         }
-
-        setUser(userRes.data);
-      } finally {
+      } else {
         setLoading(false);
+        setUser(null);
+        router.push("/dashboard");
       }
     };
 
-    init();
-  }, [router]);
+    fetchUserProfile();
+  }, []);
 
   function getToken() {
     if (typeof window === "undefined") return null;

@@ -60,11 +60,12 @@ export default function Dashboard() {
   useEffect(() => {
     const init = async () => {
       try {
-        const token = localStorage.getItem("data-auth-eduiteh-food");
         if (!token) return router.push("/sign-in");
 
         const userRes = await axios.get("/api/auth/user", {
-          headers: { "x-auth-token": token },
+          headers: {
+            "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+          },
         });
 
         setUser(userRes.data);

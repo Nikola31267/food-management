@@ -23,17 +23,18 @@ export default function MyOldOrders() {
       setError("");
 
       try {
-        const token = localStorage.getItem("data-auth-eduiteh-food");
-        if (token) {
-          const userRes = await axios.get("/api/auth/user", {
-            headers: { "x-auth-token": token },
-          });
+        const userRes = await axios.get("/api/auth/user", {
+          headers: {
+            "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+          },
+        });
 
-          setUser(userRes.data);
-        }
+        setUser(userRes.data);
 
         const res = await axios.get("/api/old-orders", {
-          headers: { "x-auth-token": token },
+          headers: {
+            "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+          },
         });
 
         const orders = res.data?.oldOrders || [];
