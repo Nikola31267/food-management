@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const deliveredItemSchema = new mongoose.Schema(
   {
     mealName: { type: String, required: true },
-    expectedCount: { type: Number, default: 0 }, // snapshot when saved
+    expectedCount: { type: Number, default: 0 },
     deliveredCount: { type: Number, default: 0 },
   },
   { _id: false },
@@ -28,7 +28,6 @@ const dayDeliverySchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-// one doc per menuId+day
 dayDeliverySchema.index({ menuId: 1, day: 1 }, { unique: true });
 
 const DayDelivery =

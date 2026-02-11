@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import { connectDB } from "@/lib/connectDB";
 import { verifyToken } from "@/lib/auth";
 import User from "@/models/User";
-import DayDelivery from "@/models/DayDelivery";
+import DayDelivery from "@/models/VerifyCount";
 
 const DAY_ORDER = ["Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък"];
 
