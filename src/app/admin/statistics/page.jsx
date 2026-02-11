@@ -25,8 +25,8 @@ export default function DashboardPage() {
             },
           });
           setUser(response.data);
-          if (response.data.role == "admin") {
-            router.push("/admin/statistics");
+          if (response.data.role != "admin") {
+            router.push("/dashboard");
           }
         } catch (error) {
           setError("Error fetching user profile");

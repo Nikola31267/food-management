@@ -42,11 +42,11 @@ export default function DailyOrdersPage() {
             },
           });
           setUser(response.data);
-          if (response.data.role == "admin") {
-            router.push("/admin/statistics");
+          if (response.data.role != "admin") {
+            router.push("/dashboard");
           }
         } catch (error) {
-          setErr("Error fetching user profile");
+          setError("Error fetching user profile");
           console.error(error);
         } finally {
           setLoading(false);

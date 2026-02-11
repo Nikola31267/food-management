@@ -22,6 +22,8 @@ export default function Home() {
           setUser(response.data);
           if (response.data.role == "admin") {
             router.push("/admin/statistics");
+          } else {
+            router.push("/dashboard");
           }
         } catch (error) {
           setError("Error fetching user profile");

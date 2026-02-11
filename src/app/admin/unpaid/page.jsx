@@ -26,8 +26,8 @@ export default function UnpaidPage() {
             },
           });
           setUser(response.data);
-          if (response.data.role == "admin") {
-            router.push("/admin/statistics");
+          if (response.data.role != "admin") {
+            router.push("/dashboard");
           }
         } catch (error) {
           setErr("Error fetching user profile");
