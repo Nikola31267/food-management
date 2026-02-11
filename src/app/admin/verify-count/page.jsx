@@ -159,23 +159,6 @@ export default function DailyOrdersPage() {
     }
   }
 
-  if (!menuId) {
-    return (
-      <div className="min-h-screen bg-slate-50">
-        <div className="mx-auto max-w-4xl px-4 py-10">
-          <div className="rounded-2xl border bg-white p-6 shadow-sm">
-            <p className="mt-2 text-slate-600">
-              Отвори URL като:{" "}
-              <code className="rounded bg-slate-100 px-2 py-1 text-sm text-slate-800">
-                /verify-count?menuId=...
-              </code>
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (loading) return <Loader />;
 
   return (

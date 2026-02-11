@@ -40,7 +40,7 @@ export function SidebarNav({ user }) {
     { name: "Неплатени поръчки", href: "/admin/unpaid", icon: Euro },
     {
       name: "Бройка",
-      href: "/admin/verify-count?menuId=",
+      href: "/admin/verify-count",
       icon: Package,
     },
     { name: "Ученици", href: "/admin/students", icon: Users },
