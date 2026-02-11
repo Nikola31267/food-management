@@ -27,22 +27,22 @@ async function getExpectedForDay(menuId, day) {
     { $project: { _id: 0, mealName: "$_id", expectedCount: 1 } },
   ]);
 
-  return rows; // [{mealName, expectedCount}]
+  return rows;
 }
 
 export async function PUT(req, { params }) {
   try {
+    await connectDB();
+
     const decoded = verifyToken(req);
     if (!decoded) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
+    const adminUser = await User.findById(decoded.id);
 
-    // optional role gate (edit as needed)
-    // if (session.user.role !== "admin") {
-    //   return NextResponse.json({ message: "Forbidden" }, { status: 403 });
-    // }
-
-    await connectDB();
+    if (!adminUser || adminUser.role !== "admin") {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
 
     const day = params?.day;
     if (!DAY_ORDER.includes(day)) {
@@ -66,7 +66,6 @@ export async function PUT(req, { params }) {
       );
     }
 
-    // recompute expected snapshot for this day
     const expectedItems = await getExpectedForDay(menuId, day);
     const expectedLookup = new Map(
       expectedItems.map((x) => [x.mealName, x.expectedCount]),

@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import axios from "axios";
 import {
   BarChart3,
   ClipboardList,
@@ -11,24 +12,17 @@ import {
   Menu as MenuIcon,
   X,
   Euro,
+  Package,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const navigation = [
-  { name: "Начало", href: "/", icon: Home },
-  { name: "Статистика", href: "/admin/statistics", icon: BarChart3 },
-  { name: "Меню", href: "/admin/menu", icon: Utensils },
-  { name: "Поръчки", href: "/admin/orders", icon: ClipboardList },
-  { name: "Неплатени поръчки", href: "/admin/unpaid", icon: Euro },
-  { name: "Ученици", href: "/admin/students", icon: Users },
-];
-
 export function SidebarNav({ user }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [menu, setMenu] = useState(null);
 
   const handleLogout = () => {
     localStorage.removeItem("data-auth-eduiteh-food");
@@ -38,6 +32,33 @@ export function SidebarNav({ user }) {
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const fetchMenu = async () => {
+      try {
+        const res = await axios.get("/api/menu");
+        setMenu(res.data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchMenu();
+  }, []);
+
+  const navigation = [
+    { name: "Начало", href: "/", icon: Home },
+    { name: "Статистика", href: "/admin/statistics", icon: BarChart3 },
+    { name: "Меню", href: "/admin/menu", icon: Utensils },
+    { name: "Поръчки", href: "/admin/orders", icon: ClipboardList },
+    { name: "Неплатени поръчки", href: "/admin/unpaid", icon: Euro },
+    {
+      name: "Бройка",
+      href: "/admin/verify-count?menuId=" + menu?._id,
+      icon: Package,
+    },
+    { name: "Ученици", href: "/admin/students", icon: Users },
+  ];
 
   useEffect(() => {
     if (!open) return;

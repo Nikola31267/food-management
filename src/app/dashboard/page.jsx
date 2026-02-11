@@ -32,8 +32,6 @@ export default function Dashboard() {
   const menuExpired =
     menu?.orderDeadline && new Date(menu.orderDeadline) < new Date();
 
-  const hasMenu = menu?.days?.some((d) => (d.meals || []).length > 0);
-
   const totalPrice = useMemo(() => {
     return Object.values(weeklyOrder)
       .flat()

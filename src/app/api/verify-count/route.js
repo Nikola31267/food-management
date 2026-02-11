@@ -9,17 +9,16 @@ const DAY_ORDER = ["Понеделник", "Вторник", "Сряда", "Че
 
 export async function GET(req) {
   try {
+    await connectDB();
     const decoded = verifyToken(req);
     if (!decoded) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
+    const adminUser = await User.findById(decoded.id);
 
-    // optional role gate (edit as needed)
-    // if (session.user.role !== "admin") {
-    //   return NextResponse.json({ message: "Forbidden" }, { status: 403 });
-    // }
-
-    await connectDB();
+    if (!adminUser || adminUser.role !== "admin") {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
 
     const { searchParams } = new URL(req.url);
     const menuId = searchParams.get("menuId");
@@ -32,7 +31,6 @@ export async function GET(req) {
 
     const mid = new mongoose.Types.ObjectId(menuId);
 
-    // 1) expected counts from embedded User.orders
     const expectedByDay = await User.aggregate([
       { $unwind: "$orders" },
       { $match: { "orders.menuId": mid } },
@@ -63,7 +61,6 @@ export async function GET(req) {
       { $project: { _id: 0, day: "$_id", items: 1 } },
     ]);
 
-    // normalize to include all weekdays even if empty
     const expectedMap = new Map(
       expectedByDay.map((d) => [d.day, d.items || []]),
     );
@@ -72,13 +69,11 @@ export async function GET(req) {
       items: expectedMap.get(day) || [],
     }));
 
-    // 2) delivered counts from DayDelivery
     const deliveries = await DayDelivery.find({ menuId }).lean();
     const deliveredByDay = new Map(
       deliveries.map((d) => [d.day, d.items || []]),
     );
 
-    // 3) merge expected + delivered
     const merged = expectedNormalized.map((d) => {
       const deliveredItems = deliveredByDay.get(d.day) || [];
       const deliveredLookup = new Map(
