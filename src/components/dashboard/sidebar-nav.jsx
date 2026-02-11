@@ -22,7 +22,6 @@ import { useEffect, useState } from "react";
 export function SidebarNav({ user }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [menu, setMenu] = useState(null);
 
   const handleLogout = () => {
     localStorage.removeItem("data-auth-eduiteh-food");
@@ -33,19 +32,6 @@ export function SidebarNav({ user }) {
     setOpen(false);
   }, [pathname]);
 
-  useEffect(() => {
-    const fetchMenu = async () => {
-      try {
-        const res = await axios.get("/api/menu");
-        setMenu(res.data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    fetchMenu();
-  }, []);
-
   const navigation = [
     { name: "Начало", href: "/", icon: Home },
     { name: "Статистика", href: "/admin/statistics", icon: BarChart3 },
@@ -54,7 +40,7 @@ export function SidebarNav({ user }) {
     { name: "Неплатени поръчки", href: "/admin/unpaid", icon: Euro },
     {
       name: "Бройка",
-      href: "/admin/verify-count?menuId=" + menu?._id,
+      href: "/admin/verify-count?menuId=",
       icon: Package,
     },
     { name: "Ученици", href: "/admin/students", icon: Users },
