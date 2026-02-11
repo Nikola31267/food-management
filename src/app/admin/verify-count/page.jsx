@@ -15,6 +15,7 @@ export default function DailyOrdersPage() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [menu, setMenu] = useState(null);
+  const menuId = menu?.id;
   const router = useRouter();
 
   useEffect(() => {
@@ -60,7 +61,6 @@ export default function DailyOrdersPage() {
   }
 
   async function load() {
-    const menuId = menu?._id;
     if (!menuId) return;
 
     const token = getToken();
