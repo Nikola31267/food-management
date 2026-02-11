@@ -6,8 +6,14 @@ export function normalizeCell(v) {
 }
 
 export function isLabelCell(s) {
-  const t = s.toLowerCase().trim();
-  return /^(сал|супа|осн|десерт)\.?\s*\d*/i.test(t);
+  const t = String(s || "")
+    .toLowerCase()
+    .trim();
+
+  // Matches ONLY labels like:
+  // "сал.1", "сал 1", "супа 2", "осн.3", "десерт 1"
+  // and DOES NOT match "супа от пиле..." / "салата гръцка..."
+  return /^(сал|супа|осн|десерт)\.?\s*\d+\s*$/i.test(t);
 }
 
 export function isWeightCell(s) {

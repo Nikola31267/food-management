@@ -56,8 +56,7 @@ const AdminOrdersPage = () => {
 
     const fetchMenu = async () => {
       const res = await axios.get("/api/menu");
-      console.log(res.data._id);
-      setMenuId(res.data._id);
+      setMenuId(res.data?._id);
     };
 
     fetchUserProfile();
