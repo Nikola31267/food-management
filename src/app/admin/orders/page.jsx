@@ -140,11 +140,28 @@ const AdminOrdersPage = () => {
         петък: "петък",
       };
 
+      const normalizeMealName = (s) =>
+        String(s || "")
+          .toLowerCase()
+          .replace(/\s+/g, " ")
+          .trim();
+
       const detectDayKey = (text) => {
         const t = normalizeMealName(text);
         for (const d of DAY_BG) if (t.includes(d)) return d;
         return DAY_ALIASES[t] || null;
       };
+
+      const parseEuro = (v) => {
+        const s = String(v ?? "")
+          .replace(/\s/g, "")
+          .replace("€", "")
+          .replace(",", ".");
+        const n = Number(s);
+        return Number.isFinite(n) ? n : 0;
+      };
+
+      const formatEuro = (n) => `€${Number(n || 0).toFixed(2)}`;
 
       const totalsByDay = Object.fromEntries(DAY_BG.map((d) => [d, {}]));
 
@@ -237,9 +254,26 @@ const AdminOrdersPage = () => {
         return;
       }
 
+      const totalCol = qtyCol + 1;
       const mealNameCol = Math.max(priceCol - 2, 0);
 
       let currentDay = null;
+      let daySum = 0;
+      let dayQtySum = 0;
+      let weekSum = 0;
+      let weekQtySum = 0;
+
+      const isLikelySubtotalRow = (r) => {
+        const nameCell = normalizeMealName(r?.[mealNameCol]);
+        const qtyCell = String(r?.[qtyCol] ?? "").trim();
+        const totalCell = String(r?.[totalCol] ?? "").trim();
+
+        return (
+          !nameCell &&
+          totalCell.includes("€") &&
+          (qtyCell === "" || /^\d/.test(qtyCell))
+        );
+      };
 
       for (let i = 0; i < rows.length; i++) {
         const r = rows[i];
@@ -247,24 +281,61 @@ const AdminOrdersPage = () => {
         const cellText = r[mealNameCol];
         const norm = normalizeMealName(cellText);
 
-        if (!norm) continue;
-
         const detectedDay = detectDayKey(cellText);
         if (detectedDay) {
           currentDay = detectedDay;
+          daySum = 0;
+          dayQtySum = 0;
           continue;
         }
 
-        if (norm.includes("седмично меню")) {
+        if (norm && norm.includes("седмично меню")) {
           currentDay = null;
           continue;
         }
 
-        if (!currentDay) continue;
+        if (currentDay) {
+          if (isLikelySubtotalRow(r)) {
+            if (!String(r[qtyCol] ?? "").trim()) r[qtyCol] = String(dayQtySum);
+            r[totalCol] = formatEuro(daySum);
 
-        const mealKey = norm;
-        const qty = totalsByDay[currentDay]?.[mealKey] || 0;
-        r[qtyCol] = String(qty);
+            continue;
+          }
+
+          if (norm) {
+            const mealKey = norm;
+            const qty = totalsByDay[currentDay]?.[mealKey] || 0;
+
+            r[qtyCol] = String(qty);
+
+            const unitPrice = parseEuro(r[priceCol]);
+            const rowTotal = unitPrice * qty;
+
+            if (totalCol < r.length) {
+              r[totalCol] = formatEuro(rowTotal);
+            }
+
+            dayQtySum += qty;
+            daySum += rowTotal;
+
+            weekQtySum += qty;
+            weekSum += rowTotal;
+          }
+        }
+      }
+
+      for (let i = rows.length - 1; i >= 0; i--) {
+        const r = rows[i];
+        const hasEuroInPrice = String(r?.[priceCol] ?? "").includes("€");
+        const hasEuroInTotal = String(r?.[totalCol] ?? "").includes("€");
+        const nameCell = normalizeMealName(r?.[mealNameCol]);
+
+        if (!nameCell && (hasEuroInPrice || hasEuroInTotal)) {
+          if (priceCol < r.length) r[priceCol] = formatEuro(weekSum);
+          if (qtyCol < r.length) r[qtyCol] = String(weekQtySum);
+          if (totalCol < r.length) r[totalCol] = formatEuro(weekSum);
+          break;
+        }
       }
 
       const csvOut = toCSV(rows);
@@ -282,7 +353,7 @@ const AdminOrdersPage = () => {
       link.remove();
       URL.revokeObjectURL(url);
 
-      toast.success("Меню CSV е изтеглено с попълнен брой.");
+      toast.success("Фактурата за Бешамел е изтеглена!");
     } catch (e) {
       console.error(e);
       toast.error("Грешка при експортиране на менюто.");
