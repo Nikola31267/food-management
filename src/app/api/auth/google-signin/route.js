@@ -39,7 +39,7 @@ export async function POST(req) {
 
     let user = await User.findOne({ email });
 
-    const role = email.startsWith("et.") ? "student" : "teacher";
+    const role = email.startsWith("et." || "ot.") ? "student" : "teacher";
     const grade = role === "teacher" ? "teacher" : undefined;
 
     if (!user) {
