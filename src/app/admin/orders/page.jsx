@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Loader from "@/components/layout/Loader";
 import { useRouter } from "next/navigation";
 import { ShinyButton } from "@/components/ui/shiny-button";
-import { Loader2, Trash } from "lucide-react";
+import { Loader2, Trash, Check, X } from "lucide-react";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
@@ -56,7 +56,7 @@ const AdminOrdersPage = () => {
 
     const fetchMenu = async () => {
       const res = await axios.get("/api/menu");
-      console.log(res.data?._id)
+      console.log(res.data?._id);
       setMenuId(res.data?._id);
     };
 
@@ -97,7 +97,7 @@ const AdminOrdersPage = () => {
 
     const csvContent = rows
       .map((row) =>
-        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
+        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
       )
       .join("\r\n");
 
@@ -227,7 +227,7 @@ const AdminOrdersPage = () => {
       const toCSV = (rows) =>
         rows
           .map((r) =>
-            r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(","),
+            r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")
           )
           .join("\r\n");
 
@@ -299,7 +299,6 @@ const AdminOrdersPage = () => {
           if (isLikelySubtotalRow(r)) {
             if (!String(r[qtyCol] ?? "").trim()) r[qtyCol] = String(dayQtySum);
             r[totalCol] = formatEuro(daySum);
-
             continue;
           }
 
@@ -391,14 +390,15 @@ const AdminOrdersPage = () => {
           headers: {
             "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
           },
-        },
+        }
       );
       toast.success("Поръчката е означена като платена!");
       fetchOrders();
-      setSubmiting(false);
     } catch (err) {
       console.error(err);
       toast.error("Грешка при означаването като платено!");
+    } finally {
+      setSubmiting(false);
     }
   };
 
@@ -414,22 +414,72 @@ const AdminOrdersPage = () => {
       });
       toast.success("Поръчката е изтрита успешно!");
       fetchOrders();
-      setSubmiting(false);
     } catch (err) {
       console.error(err);
       toast.error("Грешка при изтриването на поръчката!");
+    } finally {
+      setSubmiting(false);
     }
   };
 
-  const classes = [...new Set(ordersData.map((user) => user.grade))];
+  const downloadOrders = async () => {
+    const token = localStorage.getItem("data-auth-eduiteh-food");
+    const url = `/api/orders/download?menuId=${encodeURIComponent(menuId)}`;
 
-  const filteredOrders = ordersData.filter((user) => {
-    const matchesName = user.fullName
+    const res = await fetch(url, { headers: { "x-auth-token": token } });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      throw new Error(data?.message || "Failed to download file");
+    }
+
+    const blob = await res.blob();
+
+    let filename = "orders.xlsx";
+    const cd = res.headers.get("content-disposition") || "";
+    const match = cd.match(/filename="([^"]+)"/i);
+    if (match?.[1]) filename = match[1];
+
+    const a = document.createElement("a");
+    const objectUrl = window.URL.createObjectURL(blob);
+    a.href = objectUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(objectUrl);
+  };
+
+  const setOrderGot = async (userId, orderId, day, orderGot) => {
+    try {
+      setSubmiting(true);
+
+      await axios.put(
+        `/api/orders/order-got/${userId}/${orderId}`,
+        { day, orderGot },
+        {
+          headers: {
+            "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+          },
+        }
+      );
+
+      toast.success("Статусът е обновен!");
+      fetchOrders();
+    } catch (err) {
+      console.error(err);
+      toast.error("Грешка при обновяване!");
+    } finally {
+      setSubmiting(false);
+    }
+  };
+
+  const classes = [...new Set(ordersData.map((u) => u.grade))];
+
+  const filteredOrders = ordersData.filter((u) => {
+    const matchesName = (u.fullName || "")
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-
-    const matchesClass = selectedClass ? user.grade === selectedClass : true;
-
+    const matchesClass = selectedClass ? u.grade === selectedClass : true;
     return matchesName && matchesClass;
   });
 
@@ -437,37 +487,8 @@ const AdminOrdersPage = () => {
 
   const paginatedOrders = filteredOrders.slice(
     (currentPage - 1) * ordersPerPage,
-    currentPage * ordersPerPage,
+    currentPage * ordersPerPage
   );
-
-const downloadOrders = async () => {
-  const token = localStorage.getItem("data-auth-eduiteh-food");
-  const url = `/api/orders/download?menuId=${encodeURIComponent(menuId)}`;
-
-  const res = await fetch(url, { headers: { "x-auth-token": token } });
-  if (!res.ok) {
-    const data = await res.json().catch(() => null);
-    throw new Error(data?.message || "Failed to download file");
-  }
-
-  const blob = await res.blob();
-
-  // backend sets fixed filename="orders.xlsx"
-  let filename = "orders.xlsx";
-  const cd = res.headers.get("content-disposition") || "";
-  const match = cd.match(/filename="([^"]+)"/i);
-  if (match?.[1]) filename = match[1];
-
-  const a = document.createElement("a");
-  const objectUrl = window.URL.createObjectURL(blob);
-  a.href = objectUrl;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  window.URL.revokeObjectURL(objectUrl);
-};
-
 
   if (loading) return <Loader />;
 
@@ -502,6 +523,7 @@ const downloadOrders = async () => {
               </select>
             </div>
           </div>
+
           {ordersData.length !== 0 && (
             <div className="flex gap-2">
               <ShinyButton
@@ -519,7 +541,8 @@ const downloadOrders = async () => {
               >
                 Изтегли фактура за Бешамел
               </ShinyButton>
-            <ShinyButton
+
+              <ShinyButton
                 onClick={downloadOrders}
                 href="/"
                 className="p-2 mb-2 mt-2"
@@ -546,37 +569,90 @@ const downloadOrders = async () => {
                     <th className="border p-2">Действия</th>
                   </tr>
                 </thead>
+
                 <tbody>
-                  {paginatedOrders.map((user) =>
-                    user.orders.map((week) => (
-                      <tr key={`${user._id}-${week._id}`} className="border-b">
-                        <td className="border p-2">{user.fullName}</td>
-                        <td className="border p-2">{user.grade}</td>
+                  {paginatedOrders.map((u) =>
+                    u.orders.map((week) => (
+                      <tr key={`${u._id}-${week._id}`} className="border-b">
+                        <td className="border p-2">{u.fullName}</td>
+                        <td className="border p-2">{u.grade}</td>
+
                         <td className="border p-2">
-                          {week.days.map((day) => (
-                            <div key={day.day} className="mb-2">
-                              <strong>{day.day}:</strong>
-                              <ul className="ml-4">
-                                {day.meals.map((meal) => (
-                                  <li key={meal.mealName}>
-                                    {meal.mealName} x {meal.quantity} = €
-                                    {meal.price * meal.quantity}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          ))}
+                          {week.days.map((day) => {
+                            const got = Boolean(day.orderGot);
+
+                            return (
+                              <div key={day.day} className="mb-3">
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  <strong>{day.day}:</strong>
+
+                                  <span className="text-xs text-gray-700">
+                                    Получено:
+                                  </span>
+
+                                  <span
+                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                                      got
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-red-100 text-red-700"
+                                    }`}
+                                  >
+                                    {got ? (
+                                      <>
+                                        <Check className="w-4 h-4" /> Да
+                                      </>
+                                    ) : (
+                                      <>
+                                        <X className="w-4 h-4" /> Не
+                                      </>
+                                    )}
+                                  </span>
+
+                                  <button
+                                    type="button"
+                                    disabled={submiting}
+                                    onClick={() =>
+                                      setOrderGot(u._id, week._id, day.day, !got)
+                                    }
+                                    className={`text-xs px-2 py-1 rounded border transition-colors disabled:opacity-50 ${
+                                      got
+                                        ? "border-red-300 hover:bg-red-50"
+                                        : "border-green-300 hover:bg-green-50"
+                                    }`}
+                                    title="Смени статуса"
+                                  >
+                                    {submiting ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : got ? (
+                                      "Отмени"
+                                    ) : (
+                                      "Отбележи"
+                                    )}
+                                  </button>
+                                </div>
+
+                                <ul className="ml-4 mt-1">
+                                  {day.meals.map((meal) => (
+                                    <li key={meal.mealName}>
+                                      {meal.mealName} x {meal.quantity} = €
+                                      {meal.price * meal.quantity}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            );
+                          })}
                         </td>
+
                         <td className="border p-2 font-bold">
-                          <span>
-                            {new Intl.NumberFormat("de-DE", {
-                              style: "currency",
-                              currency: "EUR",
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            }).format(week.totalPrice)}
-                          </span>
+                          {new Intl.NumberFormat("de-DE", {
+                            style: "currency",
+                            currency: "EUR",
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          }).format(week.totalPrice)}
                         </td>
+
                         <td className="border p-2 text-center">
                           {week.paid ? (
                             <div className="text-green-600 font-bold flex flex-col gap-4">
@@ -590,9 +666,9 @@ const downloadOrders = async () => {
                             </div>
                           ) : (
                             <button
-                              onClick={() => markAsPaid(user._id, week._id)}
+                              onClick={() => markAsPaid(u._id, week._id)}
                               disabled={submiting}
-                              className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-300"
+                              className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-300 disabled:opacity-50"
                             >
                               {submiting ? (
                                 <Loader2 className="animate-spin" />
@@ -605,9 +681,9 @@ const downloadOrders = async () => {
 
                         <td className="border p-2 text-center">
                           <button
-                            onClick={() => deleteOrder(user._id, week._id)}
+                            onClick={() => deleteOrder(u._id, week._id)}
                             disabled={submiting}
-                            className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors duration-300"
+                            className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors duration-300 disabled:opacity-50"
                           >
                             {submiting ? (
                               <Loader2 className="animate-spin" />
@@ -617,10 +693,11 @@ const downloadOrders = async () => {
                           </button>
                         </td>
                       </tr>
-                    )),
+                    ))
                   )}
                 </tbody>
               </table>
+
               <div className="flex justify-center items-center gap-4 mt-6">
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
@@ -653,3 +730,4 @@ const downloadOrders = async () => {
 };
 
 export default AdminOrdersPage;
+

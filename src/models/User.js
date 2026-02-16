@@ -17,6 +17,9 @@ const dayOrderSchema = new mongoose.Schema(
       required: true,
     },
     meals: [mealSchema],
+    orderGot: {
+      type: Boolean,
+    },
   },
   { _id: false },
 );
