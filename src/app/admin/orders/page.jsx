@@ -440,61 +440,32 @@ const AdminOrdersPage = () => {
     currentPage * ordersPerPage,
   );
 
-  const downloadOrders = async () => {
-  try {
-    if (!menuId) {
-      toast.error("Няма menuId.");
-      return;
-    }
+const downloadOrders = async () => {
+  const token = localStorage.getItem("data-auth-eduiteh-food");
+  const url = `/api/orders/download?menuId=${encodeURIComponent(menuId)}`;
 
-    const token = localStorage.getItem("data-auth-eduiteh-food");
-    if (!token) {
-      toast.error("Липсва токен. Моля, влез отново.");
-      return;
-    }
-
-    const url = `/api/orders/download?menuId=${encodeURIComponent(menuId)}`;
-
-    const res = await fetch(url, {
-      headers: {
-        "x-auth-token": token,
-      },
-    });
-
-    if (!res.ok) {
-      const data = await res.json().catch(() => null);
-      throw new Error(data?.message || "Failed to download CSV");
-    }
-
-    const blob = await res.blob();
-
-    // Backend sets fixed filename="orders.csv"
-    let filename = "orders.csv";
-    const cd = res.headers.get("content-disposition") || "";
-
-    // Prefer filename*=UTF-8''... if ever added later
-    const starMatch = cd.match(/filename\*\=UTF-8''([^;]+)/i);
-    if (starMatch?.[1]) {
-      filename = decodeURIComponent(starMatch[1]);
-    } else {
-      const match = cd.match(/filename="([^"]+)"/i);
-      if (match?.[1]) filename = match[1];
-    }
-
-    const a = document.createElement("a");
-    const objectUrl = window.URL.createObjectURL(blob);
-    a.href = objectUrl;
-    a.download = filename; // should be orders.csv
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(objectUrl);
-
-    toast.success("Файлът orders.csv е изтеглен!");
-  } catch (e) {
-    console.error(e);
-    toast.error(e?.message || "Грешка при изтегляне на CSV.");
+  const res = await fetch(url, { headers: { "x-auth-token": token } });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.message || "Failed to download file");
   }
+
+  const blob = await res.blob();
+
+  // backend sets fixed filename="orders.xlsx"
+  let filename = "orders.xlsx";
+  const cd = res.headers.get("content-disposition") || "";
+  const match = cd.match(/filename="([^"]+)"/i);
+  if (match?.[1]) filename = match[1];
+
+  const a = document.createElement("a");
+  const objectUrl = window.URL.createObjectURL(blob);
+  a.href = objectUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(objectUrl);
 };
 
 

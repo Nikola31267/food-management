@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import User from "@/models/User";
 import { connectDB } from "@/lib/connectDB";
 import { requireAdmin } from "@/lib/auth";
+import ExcelJS from "exceljs";
 
 const DAYS_BG = ["Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък"];
 
@@ -22,17 +23,9 @@ function formatMeals(meals = []) {
     .join("; ");
 }
 
-function csvEscape(value) {
-  const s = value == null ? "" : String(value);
-  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
-}
-
 export async function GET(req) {
   try {
     await connectDB();
-
-    // ✅ admin only
     requireAdmin(req);
 
     const { searchParams } = new URL(req.url);
@@ -45,37 +38,50 @@ export async function GET(req) {
       return NextResponse.json({ message: "Invalid menuId" }, { status: 400 });
     }
 
-    // Only fetch needed fields
     const users = await User.find(
       {},
       { fullName: 1, grade: 1, orders: 1, archivedOrders: 1 },
     ).lean();
 
-    const rows = [];
-    rows.push(["Име", "Клас", ...DAYS_BG]); // header
+    // ---- Build workbook
+    const wb = new ExcelJS.Workbook();
+    wb.creator = "Eduiteh Food";
+    wb.created = new Date();
 
+    const ws = wb.addWorksheet("Поръчки", {
+      views: [{ state: "frozen", ySplit: 1 }], // freeze header row
+      pageSetup: { fitToPage: true, fitToWidth: 1 },
+    });
+
+    // Columns
+    ws.columns = [
+      { header: "Име", key: "name" },
+      { header: "Клас", key: "grade" },
+      ...DAYS_BG.map((d) => ({ header: d, key: d })),
+    ];
+
+    // Header styling
+    const headerRow = ws.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+    headerRow.height = 22;
+
+    // Add rows
     for (const user of users) {
-      // 1) current weekly orders for menuId
       const current = (user.orders || []).find(
         (o) => String(o.menuId) === String(menuId),
       );
 
       let days = current?.days;
 
-      // 2) fallback archived
       if (!Array.isArray(days)) {
         const archived = (user.archivedOrders || []).find(
           (a) => String(a.menuId) === String(menuId),
         );
-        const maybeWeekly = Array.isArray(archived?.orders)
-          ? archived.orders[0]
-          : null;
-
+        const maybeWeekly = Array.isArray(archived?.orders) ? archived.orders[0] : null;
         days = archived?.days || maybeWeekly?.days;
       }
 
-      // If user has no order for that menu/week — still include them as empty row (optional).
-      // If you prefer to SKIP users without orders, replace this block with `if (!Array.isArray(days)) continue;`
       const dayToMeals = {};
       for (const d of DAYS_BG) dayToMeals[d] = "";
 
@@ -87,24 +93,69 @@ export async function GET(req) {
         }
       }
 
-      rows.push([
-        user.fullName || "",
-        user.grade || "",
-        ...DAYS_BG.map((d) => dayToMeals[d]),
-      ]);
+      ws.addRow({
+        name: user.fullName || "",
+        grade: user.grade || "",
+        ...Object.fromEntries(DAYS_BG.map((d) => [d, dayToMeals[d]])),
+      });
     }
 
-    const csv = rows.map((r) => r.map(csvEscape).join(",")).join("\n");
+    // Style data cells (wrap & borders)
+    ws.eachRow((row, rowNumber) => {
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
 
-    // UTF-8 BOM for Excel Cyrillic
-    const body = "\uFEFF" + csv;
+        if (rowNumber === 1) return;
 
-    return new NextResponse(body, {
+        // Wrap for meal columns, left align text
+        cell.alignment = {
+          vertical: "top",
+          horizontal: cell.colNumber <= 2 ? "left" : "left",
+          wrapText: cell.colNumber > 2,
+        };
+      });
+    });
+
+    // Auto column widths (with caps)
+    ws.columns.forEach((col, idx) => {
+      let max = col.header?.length || 10;
+
+      col.eachCell({ includeEmpty: true }, (cell) => {
+        const v = cell.value == null ? "" : String(cell.value);
+        max = Math.max(max, v.length);
+      });
+
+      // Make name/grade smaller; day columns wider but capped
+      if (idx === 0) col.width = Math.min(Math.max(max + 2, 18), 32); // Име
+      else if (idx === 1) col.width = Math.min(Math.max(max + 2, 10), 14); // Клас
+      else col.width = Math.min(Math.max(max + 2, 22), 50); // days
+    });
+
+    // Slightly increase row heights if text is long (basic)
+    ws.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return;
+      let needsMore = false;
+      row.eachCell((cell) => {
+        if (cell.colNumber > 2 && String(cell.value || "").length > 40) {
+          needsMore = true;
+        }
+      });
+      if (needsMore) row.height = 40;
+    });
+
+    const buffer = await wb.xlsx.writeBuffer();
+
+    return new NextResponse(buffer, {
       status: 200,
       headers: {
-        "Content-Type": "text/csv; charset=utf-8",
-        // ✅ fixed name
-        "Content-Disposition": `attachment; filename="orders.csv"`,
+        "Content-Type":
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": `attachment; filename="orders.xlsx"`,
         "Cache-Control": "no-store",
       },
     });
