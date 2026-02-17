@@ -97,7 +97,7 @@ const AdminOrdersPage = () => {
 
     const csvContent = rows
       .map((row) =>
-        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
       )
       .join("\r\n");
 
@@ -227,7 +227,7 @@ const AdminOrdersPage = () => {
       const toCSV = (rows) =>
         rows
           .map((r) =>
-            r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")
+            r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(","),
           )
           .join("\r\n");
 
@@ -390,7 +390,7 @@ const AdminOrdersPage = () => {
           headers: {
             "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
           },
-        }
+        },
       );
       toast.success("Поръчката е означена като платена!");
       fetchOrders();
@@ -460,7 +460,7 @@ const AdminOrdersPage = () => {
           headers: {
             "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
           },
-        }
+        },
       );
 
       toast.success("Статусът е обновен!");
@@ -487,7 +487,7 @@ const AdminOrdersPage = () => {
 
   const paginatedOrders = filteredOrders.slice(
     (currentPage - 1) * ordersPerPage,
-    currentPage * ordersPerPage
+    currentPage * ordersPerPage,
   );
 
   if (loading) return <Loader />;
@@ -612,7 +612,12 @@ const AdminOrdersPage = () => {
                                     type="button"
                                     disabled={submiting}
                                     onClick={() =>
-                                      setOrderGot(u._id, week._id, day.day, !got)
+                                      setOrderGot(
+                                        u._id,
+                                        week._id,
+                                        day.day,
+                                        !got,
+                                      )
                                     }
                                     className={`text-xs px-2 py-1 rounded border transition-colors disabled:opacity-50 ${
                                       got
@@ -693,7 +698,7 @@ const AdminOrdersPage = () => {
                           </button>
                         </td>
                       </tr>
-                    ))
+                    )),
                   )}
                 </tbody>
               </table>
@@ -730,4 +735,3 @@ const AdminOrdersPage = () => {
 };
 
 export default AdminOrdersPage;
-
