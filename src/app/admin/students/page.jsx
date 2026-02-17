@@ -21,32 +21,40 @@ const page = () => {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (localStorage.getItem("data-auth-eduiteh-food")) {
-        try {
-          const response = await axios.get("/api/auth/user", {
-            headers: {
-              "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
-            },
-          });
-          setUser(response.data);
-          if (response.data.role != "admin") {
-            router.push("/dashboard");
-          }
-        } catch (error) {
-          setError("Error fetching user profile");
-          console.error(error);
-        } finally {
-          setLoading(false);
-        }
-      } else {
+      const token = localStorage.getItem("data-auth-eduiteh-food");
+      if (!token) {
         setLoading(false);
         setUser(null);
         router.push("/dashboard");
+        return;
+      }
+
+      try {
+        const response = await axios.get("/api/auth/user", {
+          headers: { "x-auth-token": token },
+        });
+        setUser(response.data);
+        if (response.data.role !== "admin") {
+          router.push("/dashboard");
+          return;
+        }
+
+        // Fetch students after confirming admin
+        setLoadingStudents(true);
+        const studentsRes = await axios.get("/api/students/get", {
+          headers: { "x-auth-token": token },
+        });
+        setStudents(studentsRes.data);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+        setLoadingStudents(false);
       }
     };
 
     fetchUserProfile();
-  }, []);
+  }, [router]);
 
   const deleteStudent = async (id) => {
     if (!id) return;
