@@ -17,6 +17,8 @@ const AdminOrdersPage = () => {
   const [submiting, setSubmiting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClass, setSelectedClass] = useState("");
+  const [selectedPaid, setSelectedPaid] = useState(""); // "paid" | "unpaid" | ""
+  const [selectedRole, setSelectedRole] = useState(""); // "teacher" | "student" | ""
   const [currentPage, setCurrentPage] = useState(1);
   const [menuId, setMenuId] = useState(null);
   const ordersPerPage = 5;
@@ -56,7 +58,6 @@ const AdminOrdersPage = () => {
 
     const fetchMenu = async () => {
       const res = await axios.get("/api/menu");
-      console.log(res.data?._id);
       setMenuId(res.data?._id);
     };
 
@@ -66,7 +67,7 @@ const AdminOrdersPage = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedClass]);
+  }, [searchTerm, selectedClass, selectedPaid, selectedRole]);
 
   const downloadFoodByClassCSV = () => {
     const classFoodMap = {};
@@ -480,7 +481,22 @@ const AdminOrdersPage = () => {
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
     const matchesClass = selectedClass ? u.grade === selectedClass : true;
-    return matchesName && matchesClass;
+
+    const matchesPaid = (() => {
+      if (!selectedPaid) return true;
+      if (selectedPaid === "paid")
+        return u.orders.every((o) => o.paid === true);
+      if (selectedPaid === "unpaid")
+        return u.orders.some((o) => o.paid === false);
+      return true;
+    })();
+
+    const matchesRole = selectedRole
+      ? selectedRole === "teacher"
+        ? u.role === "teacher" || u.role === "admin"
+        : u.role === selectedRole
+      : true;
+    return matchesName && matchesClass && matchesPaid && matchesRole;
   });
 
   const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
@@ -500,15 +516,15 @@ const AdminOrdersPage = () => {
         <div className="p-8 min-h-screen bg-gray-50">
           <h1 className="text-3xl font-bold mb-6">Поръчки</h1>
 
-          <div className="flex flex-row gap-2">
+          <div className="flex flex-row items-center justify-center gap-2 mb-4">
             <input
               type="text"
               placeholder="Търси по име..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="mb-4 p-3 border rounded-full w-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
+              className="p-3 border rounded-full w-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
             />
-            <div>
+            <div className="flex gap-2 ">
               <select
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
@@ -520,6 +536,26 @@ const AdminOrdersPage = () => {
                     {grade}
                   </option>
                 ))}
+              </select>
+              <select
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value)}
+                className="p-3 border rounded-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
+              >
+                <option value="">Всички роли</option>
+                <option value="student">Ученик</option>
+                <option value="teacher">Учител</option>
+              </select>
+
+              {/* Paid Filter */}
+              <select
+                value={selectedPaid}
+                onChange={(e) => setSelectedPaid(e.target.value)}
+                className="p-3 border rounded-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
+              >
+                <option value="">Всички плащания</option>
+                <option value="paid">Платени</option>
+                <option value="unpaid">Неплатени</option>
               </select>
             </div>
           </div>
