@@ -25,7 +25,7 @@ export async function DELETE(req, { params }) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    const { userId, orderId } = params;
+    const { userId, orderId } = await params;
 
     const menuIdStr = new URL(req.url).searchParams.get("menuId");
     const menuObjectId =
@@ -63,13 +63,15 @@ export async function DELETE(req, { params }) {
 
     // --- If unpaid, save to Unpaid like in big delete ---
     const unpaidTotal = !isOrderPaid(order) ? order.totalPrice || 0 : 0;
+    console.log(menuDate);
 
     if (unpaidTotal > 0) {
       await Unpaid.create({
         name: user.fullName || "—",
         grade: user.grade || "—",
+        email: user.email || "-",
         total: unpaidTotal,
-        menuDate,
+        week: menuDate,
       });
     }
 

@@ -5,6 +5,7 @@ const unpaidSchema = new mongoose.Schema({
   name: { type: String },
   grade: { type: String },
   total: { type: String },
+  email: { type: String },
 });
 
 const Unpaid = mongoose.models.Unpaid || mongoose.model("Unpaid", unpaidSchema);
