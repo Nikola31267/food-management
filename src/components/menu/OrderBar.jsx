@@ -1,9 +1,42 @@
 "use client";
 
-import { ShoppingCart, ArrowRight } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, ShoppingCart } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { ShinyButton } from "@/components/ui/shiny-button";
 
-export function OrderBar({ count, total, disabled, submitting, onSubmit }) {
+const fmt = (amount) =>
+  new Intl.NumberFormat("de-DE", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+
+export function OrderBar({
+  count,
+  total,
+  disabled,
+  submitting,
+  onSubmit,
+  weeklyOrder,
+}) {
+  const [open, setOpen] = useState(false);
   const show = count > 0 && !disabled;
+
+  const handleSend = () => {
+    setOpen(false);
+    onSubmit();
+  };
 
   return (
     <div
@@ -27,30 +60,67 @@ export function OrderBar({ count, total, disabled, submitting, onSubmit }) {
                 </p>
 
                 <p className="text-xl font-bold tracking-tight text-foreground">
-                  {new Intl.NumberFormat("de-DE", {
-                    style: "currency",
-                    currency: "EUR",
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  }).format(total)}
+                  {fmt(total)}
                 </p>
               </div>
             </div>
 
-            <button
-              type="button"
-              disabled={submitting}
-              onClick={onSubmit}
-              className={`group flex w-full items-center justify-center gap-2.5 rounded-xl px-6 py-3.5 text-sm font-semibold shadow-sm transition-all duration-200 active:scale-[0.98] sm:w-auto
+            <AlertDialog open={open} onOpenChange={setOpen}>
+              <AlertDialogTrigger asChild>
+                <button
+                  type="button"
+                  disabled={submitting}
+                  className={`group flex w-full items-center justify-center gap-2.5 rounded-xl px-6 py-3.5 text-sm font-semibold shadow-sm transition-all duration-200 active:scale-[0.98] sm:w-auto
                 ${
                   submitting
                     ? "bg-muted text-muted-foreground cursor-not-allowed"
                     : "bg-[#478BAF] text-white hover:brightness-110 hover:shadow-md"
                 }`}
-            >
-              {submitting ? "Изпращане..." : "Поръчай"}
-              <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-            </button>
+                >
+                  {submitting ? "Изпращане..." : "Поръчай"}
+                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Преглед на поръчката</AlertDialogTitle>
+                  <AlertDialogDescription asChild>
+                    <div className="mt-2 space-y-4 text-sm text-foreground">
+                      {Object.entries(weeklyOrder || {}).map(([day, meals]) => (
+                        <div key={day}>
+                          <p className="font-semibold text-base mb-1">{day}</p>
+                          <ul className="space-y-1 pl-2">
+                            {meals.map((meal) => (
+                              <li
+                                key={meal.mealId}
+                                className="flex justify-between gap-4"
+                              >
+                                <span>
+                                  {meal.name} × {meal.quantity}
+                                </span>
+                                <span className="font-medium">
+                                  {fmt(meal.price * meal.quantity)}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                      <div className="border-t pt-3 flex justify-between font-bold text-base">
+                        <span>Общо</span>
+                        <span>{fmt(total)}</span>
+                      </div>
+                    </div>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Назад</AlertDialogCancel>
+                  <ShinyButton href="" onClick={handleSend} disabled={submitting}>
+                    {submitting ? "Изпращане..." : "Изпрати поръчката"}
+                  </ShinyButton>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </div>

@@ -31,7 +31,6 @@ export default function Dashboard() {
 
   const menuExpired =
     menu?.orderDeadline && new Date(menu.orderDeadline) < new Date();
-
   const totalPrice = useMemo(() => {
     return Object.values(weeklyOrder)
       .flat()
@@ -339,6 +338,7 @@ export default function Dashboard() {
             disabled={hasOrdered || menuExpired}
             submitting={submiting}
             onSubmit={submitWeeklyOrder}
+            weeklyOrder={weeklyOrder}
           />
 
           {hasOrdered && savedOrder && (
