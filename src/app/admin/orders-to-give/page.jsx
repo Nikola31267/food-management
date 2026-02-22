@@ -261,7 +261,7 @@ export default function ArchivedOrdersPage() {
       <SidebarNav user={user} />
       <main className="lg:pl-64">
         <div className="p-8 min-h-screen bg-gray-50">
-          <h1 className="text-3xl font-bold mb-6">Архивирани поръчки</h1>
+          <h1 className="text-3xl font-bold mb-6">Поръчки за даване</h1>
 
           {/* Filters */}
           <div className="flex flex-row items-center justify-center gap-2 mb-4">
