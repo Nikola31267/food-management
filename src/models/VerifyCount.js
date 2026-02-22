@@ -14,7 +14,11 @@ const dayDeliverySchema = new mongoose.Schema(
     menuId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "WeeklyMenu",
-      required: true,
+      default: null,
+    },
+    weekStart: {
+      type: Date,
+      default: null,
       index: true,
     },
     day: {
@@ -28,10 +32,12 @@ const dayDeliverySchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-dayDeliverySchema.index({ menuId: 1, day: 1 }, { unique: true });
+dayDeliverySchema.index({ menuId: 1, day: 1 }, { unique: false });
+dayDeliverySchema.index({ weekStart: 1, day: 1 }, { unique: false });
 
-const DayDelivery =
-  mongoose.models.DayDelivery ||
-  mongoose.model("DayDelivery", dayDeliverySchema);
+// ✅ Clear cached model so schema changes take effect
+delete mongoose.models.DayDelivery;
+
+const DayDelivery = mongoose.model("DayDelivery", dayDeliverySchema);
 
 export default DayDelivery;
