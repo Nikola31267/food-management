@@ -23,7 +23,7 @@ export async function DELETE(req, { params }) {
       return NextResponse.json({ message: "Not authorized" }, { status: 403 });
     }
 
-    const { menuId } = params;
+    const { menuId } = await params;
     const download = new URL(req.url).searchParams.get("download") === "true";
 
     const menu = await WeeklyMenu.findById(menuId).lean();

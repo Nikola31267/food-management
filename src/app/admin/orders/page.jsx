@@ -450,30 +450,6 @@ const AdminOrdersPage = () => {
     window.URL.revokeObjectURL(objectUrl);
   };
 
-  const setOrderGot = async (userId, orderId, day, orderGot) => {
-    try {
-      setSubmiting(true);
-
-      await axios.put(
-        `/api/orders/order-got/${userId}/${orderId}`,
-        { day, orderGot },
-        {
-          headers: {
-            "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
-          },
-        },
-      );
-
-      toast.success("Статусът е обновен!");
-      fetchOrders();
-    } catch (err) {
-      console.error(err);
-      toast.error("Грешка при обновяване!");
-    } finally {
-      setSubmiting(false);
-    }
-  };
-
   const classes = [...new Set(ordersData.map((u) => u.grade))];
 
   const filteredOrders = ordersData.filter((u) => {
@@ -615,62 +591,11 @@ const AdminOrdersPage = () => {
 
                         <td className="border p-2">
                           {week.days.map((day) => {
-                            const got = Boolean(day.orderGot);
+
 
                             return (
                               <div key={day.day} className="mb-3">
-                                <div className="flex items-center gap-3 flex-wrap">
-                                  <strong>{day.day}:</strong>
-
-                                  <span className="text-xs text-gray-700">
-                                    Получено:
-                                  </span>
-
-                                  <span
-                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                                      got
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-red-100 text-red-700"
-                                    }`}
-                                  >
-                                    {got ? (
-                                      <>
-                                        <Check className="w-4 h-4" /> Да
-                                      </>
-                                    ) : (
-                                      <>
-                                        <X className="w-4 h-4" /> Не
-                                      </>
-                                    )}
-                                  </span>
-
-                                  <button
-                                    type="button"
-                                    disabled={submiting}
-                                    onClick={() =>
-                                      setOrderGot(
-                                        u._id,
-                                        week._id,
-                                        day.day,
-                                        !got,
-                                      )
-                                    }
-                                    className={`text-xs px-2 py-1 rounded border transition-colors disabled:opacity-50 ${
-                                      got
-                                        ? "border-red-300 hover:bg-red-50"
-                                        : "border-green-300 hover:bg-green-50"
-                                    }`}
-                                    title="Смени статуса"
-                                  >
-                                    {submiting ? (
-                                      <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : got ? (
-                                      "Отмени"
-                                    ) : (
-                                      "Отбележи"
-                                    )}
-                                  </button>
-                                </div>
+                               
 
                                 <ul className="ml-4 mt-1">
                                   {day.meals.map((meal) => (

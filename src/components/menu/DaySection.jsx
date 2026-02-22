@@ -34,9 +34,9 @@ export function DaySection({
             <div className="space-y-2">
               {orderedDay.meals.map((meal, idx) => (
                 <div key={idx} className="flex justify-between gap-3 text-sm">
-                  <span className="min-w-0 flex-1 text-foreground">
+                  <span className="min-w-0 flex-1 text-foreground break-words">
                     {meal.mealName} × {meal.quantity}
-                  </span>
+                  </span>{" "}
                   <span className="shrink-0 font-semibold">
                     €{(meal.price * meal.quantity).toFixed(2)}
                   </span>

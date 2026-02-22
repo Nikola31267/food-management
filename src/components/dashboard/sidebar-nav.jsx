@@ -38,6 +38,7 @@ export function SidebarNav({ user }) {
     { name: "Меню", href: "/admin/menu", icon: Utensils },
     { name: "Поръчки", href: "/admin/orders", icon: ClipboardList },
     { name: "Неплатени поръчки", href: "/admin/unpaid", icon: Euro },
+    { name: "Orders to give", href: "/admin/orders-to-give", icon: Utensils },
     {
       name: "Бройка",
       href: "/admin/verify-count",

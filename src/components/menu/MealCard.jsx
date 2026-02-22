@@ -22,7 +22,7 @@ export function MealCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-sm font-medium text-card-foreground">
+          <h3 className="text-sm font-medium text-card-foreground">
             {meal.name}
           </h3>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
