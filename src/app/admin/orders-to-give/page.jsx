@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Check, X, Loader2, Trash } from "lucide-react";
@@ -75,7 +74,7 @@ export default function ArchivedOrdersPage() {
   const [user, setUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClass, setSelectedClass] = useState("");
-  const [selectedWeek, setSelectedWeek] = useState(""); // NEW
+  const [selectedWeek, setSelectedWeek] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const ordersPerPage = 5;
 
@@ -225,7 +224,6 @@ export default function ArchivedOrdersPage() {
 
   const classes = [...new Set(rows.map((r) => r.grade))];
 
-  // Build unique weeks from rows, sorted newest first
   const weeks = [
     ...new Map(
       rows
@@ -261,7 +259,6 @@ export default function ArchivedOrdersPage() {
   return (
     <div className="min-h-screen">
       <SidebarNav user={user} />
-
       <main className="lg:pl-64">
         <div className="p-8 min-h-screen bg-gray-50">
           <h1 className="text-3xl font-bold mb-6">Архивирани поръчки</h1>
@@ -289,7 +286,6 @@ export default function ArchivedOrdersPage() {
                 ))}
               </select>
 
-              {/* Week filter */}
               <select
                 value={selectedWeek}
                 onChange={(e) => setSelectedWeek(e.target.value)}
@@ -316,7 +312,7 @@ export default function ArchivedOrdersPage() {
                     <th className="border p-2">Клас</th>
                     <th className="border p-2">Седмица</th>
                     <th className="border p-2">Поръчка</th>
-                    <th className="border p-2">Сума (лв.)</th>
+                    <th className="border p-2">Сума (€)</th>
                     <th className="border p-2">Действия</th>
                   </tr>
                 </thead>
@@ -389,7 +385,7 @@ export default function ArchivedOrdersPage() {
                               <ul className="ml-4 mt-1">
                                 {meals.map((meal, i) => (
                                   <li key={i}>
-                                    {meal.name} x {meal.quantity} = лв.{" "}
+                                    {meal.name} x {meal.quantity} = €
                                     {(
                                       (meal.price ?? 0) * (meal.quantity ?? 1)
                                     ).toFixed(2)}
@@ -402,11 +398,11 @@ export default function ArchivedOrdersPage() {
                       </td>
 
                       <td className="border p-2 font-bold">
-                        {new Intl.NumberFormat("bg-BG", {
+                        €
+                        {new Intl.NumberFormat("de-DE", {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
-                        }).format(row.total)}{" "}
-                        лв.
+                        }).format(row.total)}
                       </td>
 
                       <td className="border p-2 text-center">
