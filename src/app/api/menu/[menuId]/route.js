@@ -150,7 +150,8 @@ export async function DELETE(req, { params }) {
           name: u.fullName || "—",
           grade: u.grade || "—",
           total: unpaidTotal,
-          menuDate,
+          week: menuDate, // ← was menuDate, schema field is "week"
+          email: u.email || "—", // ← added from user
         });
       }
     });

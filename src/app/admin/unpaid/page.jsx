@@ -111,14 +111,20 @@ export default function UnpaidPage() {
 
         {!loading && !err && (
           <div className="mt-4 overflow-x-auto rounded-lg border bg-white">
-            <table className="min-w-[700px] w-full border-collapse">
+            <table className="min-w-[900px] w-full border-collapse">
               <thead className="bg-gray-100">
                 <tr>
                   <th className="border px-3 py-2 text-left text-sm font-semibold">
-                    Име
+                    Ime
                   </th>
                   <th className="border px-3 py-2 text-left text-sm font-semibold">
                     Клас
+                  </th>
+                  <th className="border px-3 py-2 text-left text-sm font-semibold">
+                    Имейл
+                  </th>
+                  <th className="border px-3 py-2 text-left text-sm font-semibold">
+                    Седмица
                   </th>
                   <th className="border px-3 py-2 text-left text-sm font-semibold">
                     Дължима сума
@@ -133,7 +139,7 @@ export default function UnpaidPage() {
                 {orders.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={6}
                       className="border px-3 py-4 text-center text-sm text-gray-500"
                     >
                       Няма неплатени поръчки.
@@ -142,8 +148,18 @@ export default function UnpaidPage() {
                 ) : (
                   orders.map((o) => (
                     <tr key={o._id} className="hover:bg-gray-50">
-                      <td className="border px-3 py-2 text-sm">{o.name}</td>
-                      <td className="border px-3 py-2 text-sm">{o.grade}</td>
+                      <td className="border px-3 py-2 text-sm">
+                        {o.name || "—"}
+                      </td>
+                      <td className="border px-3 py-2 text-sm">
+                        {o.grade || "—"}
+                      </td>
+                      <td className="border px-3 py-2 text-sm">
+                        {o.email || "—"}
+                      </td>
+                      <td className="border px-3 py-2 text-sm">
+                        {o.week || "—"}
+                      </td>
                       <td className="border px-3 py-2 text-sm font-bold">
                         {new Intl.NumberFormat("de-DE", {
                           minimumFractionDigits: 2,
@@ -151,7 +167,6 @@ export default function UnpaidPage() {
                         }).format(o.total)}{" "}
                         €
                       </td>
-
                       <td className="border px-3 py-2 text-sm">
                         <button
                           onClick={() => deleteOrder(o._id)}
