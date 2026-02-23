@@ -590,26 +590,22 @@ const AdminOrdersPage = () => {
                         <td className="border p-2">{u.grade}</td>
 
                         <td className="border p-2">
-                          {week.days.map((day) => {
-
-
-                            return (
-                              <div key={day.day} className="mb-3">
-                               
-
-                                <ul className="ml-4 mt-1">
-                                  {day.meals.map((meal) => (
-                                    <li key={meal.mealName}>
-                                      {meal.mealName} x {meal.quantity} = €
-                                      {meal.price * meal.quantity}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            );
-                          })}
+                          {week.days.map((day) => (
+                            <div key={day.day} className="mb-3">
+                              <strong className="text-sm font-semibold capitalize">
+                                {day.day}
+                              </strong>
+                              <ul className="ml-4 mt-1">
+                                {day.meals.map((meal) => (
+                                  <li key={meal.mealName}>
+                                    {meal.mealName} x {meal.quantity} = €
+                                    {(meal.price * meal.quantity).toFixed(2)}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
                         </td>
-
                         <td className="border p-2 font-bold">
                           {new Intl.NumberFormat("de-DE", {
                             style: "currency",
