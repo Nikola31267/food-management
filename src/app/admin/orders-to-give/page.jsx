@@ -4,6 +4,7 @@ import axios from "axios";
 import { Check, X, Loader2, Trash } from "lucide-react";
 import Loader from "@/components/layout/Loader";
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
+import { ShinyButton } from "@/components/ui/shiny-button";
 
 const getToken = () => {
   try {
@@ -203,6 +204,34 @@ export default function ArchivedOrdersPage() {
     }
   };
 
+  const downloadOrders = async () => {
+    const token = getToken();
+    const filteredOrderIds = filteredRows.map((r) => r.orderId).join(",");
+    const url = `/api/archived-orders/download?orderIds=${encodeURIComponent(filteredOrderIds)}`;
+
+    const res = await fetch(url, { headers: { "x-auth-token": token } });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      throw new Error(data?.message || "Failed to download file");
+    }
+
+    const blob = await res.blob();
+
+    let filename = "archived-orders.xlsx";
+    const cd = res.headers.get("content-disposition") || "";
+    const match = cd.match(/filename="([^"]+)"/i);
+    if (match?.[1]) filename = match[1];
+
+    const a = document.createElement("a");
+    const objectUrl = window.URL.createObjectURL(blob);
+    a.href = objectUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(objectUrl);
+  };
+
   if (loading) return <Loader />;
 
   if (error) {
@@ -300,6 +329,15 @@ export default function ArchivedOrdersPage() {
               </select>
             </div>
           </div>
+
+          {/* Download button — between filters and table */}
+          {filteredRows.length > 0 && (
+            <div className="flex gap-2 mb-4">
+              <ShinyButton onClick={downloadOrders} href="/" className="p-2">
+                Изтегли поръчките за седмицата
+              </ShinyButton>
+            </div>
+          )}
 
           {filteredRows.length === 0 ? (
             <p>Няма намерени архивирани поръчки.</p>
