@@ -21,7 +21,7 @@ const page = () => {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      const token = localStorage.getItem("data-auth-eduiteh-food");
+      const token = localStorage.getItem("data-auth-eduiteh-school-food-management");
       if (!token) {
         setLoading(false);
         setUser(null);
@@ -69,7 +69,7 @@ const page = () => {
       await axios.delete("/api/students/delete", {
         data: { id },
         headers: {
-          "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+          "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
         },
       });
 

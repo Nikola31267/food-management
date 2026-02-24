@@ -59,7 +59,7 @@ export default function Dashboard() {
   useEffect(() => {
     const init = async () => {
       try {
-        const token = localStorage.getItem("data-auth-eduiteh-food");
+        const token = localStorage.getItem("data-auth-eduiteh-school-food-management");
         if (!token) return router.push("/sign-in");
 
         const userRes = await axios.get("/api/auth/user", {
@@ -90,7 +90,7 @@ export default function Dashboard() {
   }, [router, menu]);
 
   const handleLogout = () => {
-    localStorage.removeItem("data-auth-eduiteh-food");
+    localStorage.removeItem("data-auth-eduiteh-school-food-management");
     window.location.reload();
   };
 
@@ -183,7 +183,7 @@ export default function Dashboard() {
         { weeklyOrder, totalPrice },
         {
           headers: {
-            "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+            "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
           },
         },
       );

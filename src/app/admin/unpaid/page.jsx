@@ -18,11 +18,11 @@ export default function UnpaidPage() {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (localStorage.getItem("data-auth-eduiteh-food")) {
+      if (localStorage.getItem("data-auth-eduiteh-school-food-management")) {
         try {
           const response = await axios.get("/api/auth/user", {
             headers: {
-              "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+              "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
             },
           });
           setUser(response.data);
@@ -51,7 +51,7 @@ export default function UnpaidPage() {
     try {
       const res = await axios.get("/api/unpaid", {
         headers: {
-          "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+          "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
         },
       });
 
@@ -70,7 +70,7 @@ export default function UnpaidPage() {
     try {
       await axios.delete(`/api/unpaid?id=${id}`, {
         headers: {
-          "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+          "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
         },
       });
 

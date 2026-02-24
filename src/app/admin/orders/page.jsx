@@ -32,11 +32,11 @@ const AdminOrdersPage = () => {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (localStorage.getItem("data-auth-eduiteh-food")) {
+      if (localStorage.getItem("data-auth-eduiteh-school-food-management")) {
         try {
           const response = await axios.get("/api/auth/user", {
             headers: {
-              "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+              "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
             },
           });
           if (response.data.role != "admin") {
@@ -365,7 +365,7 @@ const AdminOrdersPage = () => {
     try {
       const res = await axios.get("/api/orders", {
         headers: {
-          "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+          "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
         },
       });
       setOrdersData(res.data);
@@ -389,7 +389,7 @@ const AdminOrdersPage = () => {
         {},
         {
           headers: {
-            "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+            "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
           },
         },
       );
@@ -410,7 +410,7 @@ const AdminOrdersPage = () => {
     try {
       await axios.delete(`/api/orders/${userId}/${orderId}?menuId=${menuId}`, {
         headers: {
-          "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+          "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
         },
       });
       toast.success("Поръчката е изтрита успешно!");
@@ -424,7 +424,7 @@ const AdminOrdersPage = () => {
   };
 
   const downloadOrders = async () => {
-    const token = localStorage.getItem("data-auth-eduiteh-food");
+    const token = localStorage.getItem("data-auth-eduiteh-school-food-management");
     const url = `/api/orders/download?menuId=${encodeURIComponent(menuId)}`;
 
     const res = await fetch(url, { headers: { "x-auth-token": token } });

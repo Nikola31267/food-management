@@ -24,7 +24,7 @@ export function SidebarNav({ user }) {
   const [open, setOpen] = useState(false);
 
   const handleLogout = () => {
-    localStorage.removeItem("data-auth-eduiteh-food");
+    localStorage.removeItem("data-auth-eduiteh-school-food-management");
     window.location.reload();
   };
 

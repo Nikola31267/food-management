@@ -35,7 +35,7 @@ export default function DropdownMenuBasic() {
 
   useEffect(() => {
     const checkAuthAndAccess = async () => {
-      if (!localStorage.getItem("data-auth-eduiteh-food")) {
+      if (!localStorage.getItem("data-auth-eduiteh-school-food-management")) {
         router.push("/sign-in");
         return;
       }
@@ -43,7 +43,7 @@ export default function DropdownMenuBasic() {
       try {
         const response = await axios.get("/api/auth/user", {
           headers: {
-            "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+            "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
           },
         });
         setUser(response.data);
@@ -76,7 +76,7 @@ export default function DropdownMenuBasic() {
         { grade: selectedGrade },
         {
           headers: {
-            "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+            "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
           },
         },
       );
@@ -92,7 +92,7 @@ export default function DropdownMenuBasic() {
   };
 
   const signOut = () => {
-    localStorage.removeItem("data-auth-eduiteh-food");
+    localStorage.removeItem("data-auth-eduiteh-school-food-management");
     window.location.reload();
   };
 

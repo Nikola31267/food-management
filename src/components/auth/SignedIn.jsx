@@ -8,7 +8,7 @@ function SignedIn({ children }) {
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem("data-auth-eduiteh-food");
+    const token = localStorage.getItem("data-auth-eduiteh-school-food-management");
     if (token) {
       setProfile(true);
     }

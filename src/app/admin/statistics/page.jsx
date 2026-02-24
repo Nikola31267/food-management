@@ -17,11 +17,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (localStorage.getItem("data-auth-eduiteh-food")) {
+      if (localStorage.getItem("data-auth-eduiteh-school-food-management")) {
         try {
           const response = await axios.get("/api/auth/user", {
             headers: {
-              "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+              "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
             },
           });
           setUser(response.data);

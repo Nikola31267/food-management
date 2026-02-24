@@ -8,7 +8,7 @@ import { ShinyButton } from "@/components/ui/shiny-button";
 
 const getToken = () => {
   try {
-    return localStorage.getItem("data-auth-eduiteh-food") ?? "";
+    return localStorage.getItem("data-auth-eduiteh-school-food-management") ?? "";
   } catch {
     return "";
   }
@@ -81,11 +81,11 @@ export default function ArchivedOrdersPage() {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (localStorage.getItem("data-auth-eduiteh-food")) {
+      if (localStorage.getItem("data-auth-eduiteh-school-food-management")) {
         try {
           const response = await axios.get("/api/auth/user", {
             headers: {
-              "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+              "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
             },
           });
           setUser(response.data);

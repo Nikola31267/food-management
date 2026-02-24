@@ -52,7 +52,7 @@ const AdminPage = () => {
       try {
         const userRes = await axios.get("/api/auth/user", {
           headers: {
-            "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+            "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
           },
         });
 
@@ -183,7 +183,7 @@ const AdminPage = () => {
     try {
       await axios.post("/api/menu", payload, {
         headers: {
-          "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+          "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
         },
       });
 
@@ -256,7 +256,7 @@ const AdminPage = () => {
 
       await axios.put(`/api/menu/${weeklyMenu._id}`, payload, {
         headers: {
-          "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+          "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
         },
       });
 
@@ -283,7 +283,7 @@ const AdminPage = () => {
       `/api/menu/${weeklyMenu._id}?download=${downloadOrders}`,
       {
         headers: {
-          "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+          "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
         },
         responseType: downloadOrders ? "blob" : "json",
       },

@@ -31,16 +31,16 @@ export default function DailyOrdersPage() {
 
   function getToken() {
     if (typeof window === "undefined") return null;
-    return localStorage.getItem("data-auth-eduiteh-food");
+    return localStorage.getItem("data-auth-eduiteh-school-food-management");
   }
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (localStorage.getItem("data-auth-eduiteh-food")) {
+      if (localStorage.getItem("data-auth-eduiteh-school-food-management")) {
         try {
           const response = await axios.get("/api/auth/user", {
             headers: {
-              "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+              "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
             },
           });
           setUser(response.data);

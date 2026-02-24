@@ -14,9 +14,9 @@ export default function Login() {
 
   useEffect(() => {
     if (
-      localStorage.getItem("data-auth-eduiteh-food") ||
-      !localStorage.getItem("data-auth-eduiteh-food") === null ||
-      !localStorage.getItem("data-auth-eduiteh-food") === ""
+      localStorage.getItem("data-auth-eduiteh-school-food-management") ||
+      !localStorage.getItem("data-auth-eduiteh-school-food-management") === null ||
+      !localStorage.getItem("data-auth-eduiteh-school-food-management") === ""
     ) {
       router.push("/dashboard");
     } else {
@@ -31,7 +31,7 @@ export default function Login() {
       const response = await axios.post("/api/auth/google-signin", {
         token,
       });
-      localStorage.setItem("data-auth-eduiteh-food", response.data.token);
+      localStorage.setItem("data-auth-eduiteh-school-food-management", response.data.token);
       if (response.data.user.role == "teacher") {
         router.push("/dashboard");
       }

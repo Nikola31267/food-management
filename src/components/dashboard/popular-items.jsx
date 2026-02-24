@@ -59,7 +59,7 @@ export function PopularItems() {
         setLoading(true);
         const { data } = await axios.get("/api/top-meals", {
           headers: {
-            "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+            "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
           },
         });
 

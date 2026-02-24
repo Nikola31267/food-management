@@ -25,7 +25,7 @@ export default function MyOldOrders() {
       try {
         const userRes = await axios.get("/api/auth/user", {
           headers: {
-            "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+            "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
           },
         });
 
@@ -33,7 +33,7 @@ export default function MyOldOrders() {
 
         const res = await axios.get("/api/old-orders", {
           headers: {
-            "x-auth-token": localStorage.getItem("data-auth-eduiteh-food"),
+            "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
           },
         });
 
@@ -59,7 +59,7 @@ export default function MyOldOrders() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("data-auth-eduiteh-food");
+    localStorage.removeItem("data-auth-eduiteh-school-food-management");
     window.location.reload();
   };
 
