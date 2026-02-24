@@ -7,7 +7,7 @@ from pymongo import MongoClient
 from bson import ObjectId
 
 # ── Configuration ──────────────────────────────────────────────
-MONGO_URI = "mongodb+srv://nikolaminchev:5|wM`wgT£4Q47hi4O0@food-management-chpg.jv5daw1.mongodb.net/?appName=Food-Management-CHPG"
+MONGO_URI = ""
 DATABASE_NAME = "test"
 OUTPUT_DIR = "./mongo_exports"
 # ───────────────────────────────────────────────────────────────
