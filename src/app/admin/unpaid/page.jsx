@@ -75,7 +75,7 @@ export default function UnpaidPage() {
 
       <main
         style={{ paddingLeft: "var(--sidebar-width, 16rem)" }}
-        className="transition-all duration-300"
+        className="transition-all duration-300 ml-4"
       >
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">Неплатени Поръчки</h1>

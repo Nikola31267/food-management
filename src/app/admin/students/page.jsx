@@ -96,7 +96,7 @@ const page = () => {
 
       <main
         style={{ paddingLeft: "var(--sidebar-width, 16rem)" }}
-        className="transition-all duration-300"
+        className="transition-all duration-300 ml-4"
       >
         <h1 className="text-2xl font-semibold mb-4">Ученици</h1>
         <div className="flex flex-col sm:flex-row gap-3 mb-4">

@@ -188,7 +188,6 @@ export default function ArchivedOrdersPage() {
     setTogglingKey(key);
 
     try {
-      // Cookie sent automatically — no token needed
       await axios.put(
         `/api/archived-orders/order-got/${row.studentId}/${row.orderId}`,
         {
@@ -197,7 +196,23 @@ export default function ArchivedOrdersPage() {
           orderGot: !dayData.orderGot,
         },
       );
-      await fetchArchivedOrders();
+
+      // Update only the specific row+day in local state — no full refetch
+      setRows((prev) =>
+        prev.map((r) => {
+          if (r.orderId !== row.orderId) return r;
+          return {
+            ...r,
+            dayMeals: {
+              ...r.dayMeals,
+              [day]: {
+                ...r.dayMeals[day],
+                orderGot: !dayData.orderGot,
+              },
+            },
+          };
+        }),
+      );
     } catch (err) {
       alert(err.response?.data?.message ?? "Грешка при обновяване!");
     } finally {
