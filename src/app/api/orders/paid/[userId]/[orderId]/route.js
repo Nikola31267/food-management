@@ -7,7 +7,7 @@ export async function PUT(req, { params }) {
   await connectDB();
 
   try {
-    const decoded = verifyToken(req);
+    const decoded = await verifyToken(req);
     const adminUser = await User.findById(decoded.id);
 
     if (!adminUser || adminUser.role !== "admin") {

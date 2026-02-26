@@ -50,11 +50,7 @@ const AdminPage = () => {
   useEffect(() => {
     const init = async () => {
       try {
-        const userRes = await axios.get("/api/auth/user", {
-          headers: {
-            "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
-          },
-        });
+        const userRes = await axios.get("/api/auth/user");
 
         if (userRes.data.role !== "admin") {
           router.push("/dashboard");
@@ -181,11 +177,8 @@ const AdminPage = () => {
 
     setSubmiting(true);
     try {
-      await axios.post("/api/menu", payload, {
-        headers: {
-          "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
-        },
-      });
+      await axios.post("/api/menu", payload);
+
 
       toast.success("Менюто е създадено!");
       await fetchMenu();
@@ -254,11 +247,7 @@ const AdminPage = () => {
         })),
       };
 
-      await axios.put(`/api/menu/${weeklyMenu._id}`, payload, {
-        headers: {
-          "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
-        },
-      });
+      await axios.put(`/api/menu/${weeklyMenu._id}`, payload);
 
       toast.success("Менюто е редактирано!");
       setIsEditing(false);
@@ -280,14 +269,9 @@ const AdminPage = () => {
     );
 
     const response = await axios.delete(
-      `/api/menu/${weeklyMenu._id}?download=${downloadOrders}`,
-      {
-        headers: {
-          "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
-        },
-        responseType: downloadOrders ? "blob" : "json",
-      },
-    );
+  `/api/menu/${weeklyMenu._id}?download=${downloadOrders}`,
+  { responseType: downloadOrders ? "blob" : "json" },
+);
 
     if (downloadOrders) {
       const startDate = formatDate(weeklyMenu.weekStart);

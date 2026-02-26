@@ -1,5 +1,4 @@
 "use client";
-
 import { DashboardHeader } from "@/components/dashboard/header";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { PaymentStatus } from "@/components/dashboard/payment-status";
@@ -17,27 +16,18 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (localStorage.getItem("data-auth-eduiteh-school-food-management")) {
-        try {
-          const response = await axios.get("/api/auth/user", {
-            headers: {
-              "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
-            },
-          });
-          setUser(response.data);
-          if (response.data.role != "admin") {
-            router.push("/dashboard");
-          }
-        } catch (error) {
-          setError("Error fetching user profile");
-          console.error(error);
-        } finally {
-          setLoading(false);
+      try {
+        // Cookie sent automatically — no token needed
+        const response = await axios.get("/api/auth/user");
+        setUser(response.data);
+        if (response.data.role !== "admin") {
+          router.push("/dashboard");
         }
-      } else {
+      } catch (error) {
+        console.error(error);
+        router.push("/sign-in");
+      } finally {
         setLoading(false);
-        setUser(null);
-        router.push("/dashboard");
       }
     };
 
@@ -52,11 +42,9 @@ export default function DashboardPage() {
       <main className="lg:pl-64">
         <div className="px-4 py-6 sm:px-6 lg:px-8">
           <DashboardHeader />
-
           <div className="mt-6">
             <StatsCards />
           </div>
-
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
             <PaymentStatus />
             <PopularItems />

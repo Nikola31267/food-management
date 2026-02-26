@@ -8,7 +8,7 @@ export async function PUT(req, { params }) {
   try {
     await connectDB();
 
-    const decoded = verifyToken(req);
+    const decoded = await verifyToken(req);
     if (!decoded) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }

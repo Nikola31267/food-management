@@ -8,16 +8,16 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req) {
   await connectDB();
-
   try {
-    const decoded = verifyToken(req);
+    const decoded = await verifyToken(req); // ← await added
     const user = await User.findById(decoded.id);
 
+    if (!user) {
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
+    }
+
     if (user.role !== "admin") {
-      return NextResponse.json(
-        { message: "You are not admin" },
-        { status: 403 },
-      );
+      return NextResponse.json({ message: "You are not admin" }, { status: 403 });
     }
 
     const { weekStart, weekEnd, days, orderDeadline, menuFile, menuFileName } =
@@ -43,8 +43,6 @@ export async function POST(req) {
       weekEnd,
       orderDeadline: deadlineDate,
       days,
-
-      // ✅ store raw CSV text
       menuFile: menuFile || "",
       menuFileName: menuFileName || "",
     });
@@ -58,10 +56,8 @@ export async function POST(req) {
 
 export async function GET() {
   await connectDB();
-
   try {
     const menu = await WeeklyMenu.findOne().sort({ createdAt: -1 }).lean();
-
     return NextResponse.json(menu);
   } catch (err) {
     return NextResponse.json({ message: err.message }, { status: 500 });

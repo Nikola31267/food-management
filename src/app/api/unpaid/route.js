@@ -8,7 +8,7 @@ export async function GET(req) {
   await connectDB();
 
   try {
-    const decoded = verifyToken(req);
+    const decoded = await verifyToken(req);
     const userId = decoded.id;
 
     const user = await User.findById(userId);
@@ -36,7 +36,7 @@ export async function DELETE(req) {
   await connectDB();
 
   try {
-    const decoded = verifyToken(req);
+    const decoded = await verifyToken(req);
     const userId = decoded.id;
 
     const user = await User.findById(userId);

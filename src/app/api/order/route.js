@@ -7,11 +7,9 @@ import TopMeal from "@/models/TopMeal";
 
 export async function POST(req) {
   await connectDB();
-
   try {
-    const decoded = verifyToken(req);
+    const decoded = await verifyToken(req); // ← await added
     const userId = decoded.id;
-
     const { weeklyOrder } = await req.json();
 
     const user = await User.findById(userId);
@@ -20,7 +18,6 @@ export async function POST(req) {
     }
 
     const menu = await WeeklyMenu.findOne().sort({ createdAt: -1 });
-
     if (!menu) {
       return NextResponse.json({ error: "No active menu" }, { status: 400 });
     }
@@ -36,7 +33,6 @@ export async function POST(req) {
     const existingOrder = user.orders.find(
       (order) => order.menuId?.toString() === menu._id.toString(),
     );
-
     if (existingOrder) {
       return NextResponse.json(
         { error: "User has already submitted an order" },
@@ -77,18 +73,13 @@ export async function POST(req) {
       );
 
       weeklyOrderObj.totalPrice += dayTotal;
-
-      weeklyOrderObj.days.push({
-        day,
-        meals: dayMeals,
-      });
+      weeklyOrderObj.days.push({ day, meals: dayMeals });
     }
 
     user.orders.push(weeklyOrderObj);
     await user.save();
 
     const allMeals = weeklyOrderObj.days.flatMap((d) => d.meals);
-
     if (allMeals.length) {
       const ops = allMeals.map((m) => ({
         updateOne: {
@@ -100,7 +91,6 @@ export async function POST(req) {
           upsert: true,
         },
       }));
-
       await TopMeal.bulkWrite(ops, { ordered: false });
     }
 
@@ -110,7 +100,6 @@ export async function POST(req) {
     });
   } catch (err) {
     console.error(err);
-
     return NextResponse.json(
       { error: "Failed to save order" },
       { status: 500 },

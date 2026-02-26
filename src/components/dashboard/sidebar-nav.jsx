@@ -16,17 +16,19 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
 
 export function SidebarNav({ user }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const router = useRouter();
 
-  const handleLogout = () => {
-    localStorage.removeItem("data-auth-eduiteh-school-food-management");
-    window.location.reload();
-  };
+const handleLogout = async () => {
+  await axios.post("/api/auth/sign-out");
+  router.push("/sign-in");
+};
 
   useEffect(() => {
     setOpen(false);

@@ -7,7 +7,7 @@ export async function POST(req) {
   await connectDB();
 
   try {
-    verifyToken(req);
+    await verifyToken(req);
 
     const { mealId, mealName, count } = await req.json();
 
@@ -48,7 +48,7 @@ export async function PUT(req) {
   await connectDB();
 
   try {
-    verifyToken(req);
+    await verifyToken(req);
 
     const { mealId, quantity, mealName } = await req.json();
     const incBy = typeof quantity === "number" ? quantity : 1;
@@ -94,7 +94,7 @@ export async function GET(req) {
   await connectDB();
 
   try {
-    verifyToken(req);
+    await verifyToken(req);
 
     const top5 = await TopMeal.find({})
       .sort({ count: -1, updatedAt: -1 })

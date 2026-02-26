@@ -6,17 +6,7 @@ import Loader from "@/components/layout/Loader";
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
 import { ShinyButton } from "@/components/ui/shiny-button";
 
-const getToken = () => {
-  try {
-    return localStorage.getItem("data-auth-eduiteh-school-food-management") ?? "";
-  } catch {
-    return "";
-  }
-};
-
-const authHeaders = () => ({
-  "x-auth-token": getToken(),
-});
+// Removed getToken() and authHeaders() — cookies are sent automatically
 
 const DAYS = ["Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък"];
 
@@ -81,27 +71,19 @@ export default function ArchivedOrdersPage() {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (localStorage.getItem("data-auth-eduiteh-school-food-management")) {
-        try {
-          const response = await axios.get("/api/auth/user", {
-            headers: {
-              "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
-            },
-          });
-          setUser(response.data);
-          if (response.data.role !== "admin") {
-            window.location.href = "/dashboard";
-          }
-        } catch (error) {
-          setError("Error fetching user profile");
-          console.error(error);
-        } finally {
-          setLoading(false);
+      try {
+        // Cookie sent automatically — no token needed
+        const response = await axios.get("/api/auth/user");
+        setUser(response.data);
+        if (response.data.role !== "admin") {
+          window.location.href = "/dashboard";
         }
-      } else {
+      } catch (error) {
+        setError("Error fetching user profile");
+        console.error(error);
+        window.location.href = "/sign-in";
+      } finally {
         setLoading(false);
-        setUser(null);
-        window.location.href = "/dashboard";
       }
     };
 
@@ -113,9 +95,8 @@ export default function ArchivedOrdersPage() {
       setLoading(true);
       setError(null);
 
-      const { data } = await axios.get("/api/archived-orders", {
-        headers: authHeaders(),
-      });
+      // Cookie sent automatically — no token needed
+      const { data } = await axios.get("/api/archived-orders");
 
       const flat = [];
       data.data.forEach((student) => {
@@ -163,6 +144,7 @@ export default function ArchivedOrdersPage() {
     setTogglingKey(key);
 
     try {
+      // Cookie sent automatically — no token needed
       await axios.put(
         `/api/archived-orders/order-got/${row.studentId}/${row.orderId}`,
         {
@@ -170,7 +152,6 @@ export default function ArchivedOrdersPage() {
           day,
           orderGot: !dayData.orderGot,
         },
-        { headers: authHeaders() },
       );
       await fetchArchivedOrders();
     } catch (err) {
@@ -181,15 +162,12 @@ export default function ArchivedOrdersPage() {
   };
 
   const handleDelete = async (orderId) => {
-    if (
-      !confirm("Сигурни ли сте, че искате да изтриете тази архивирана поръчка?")
-    )
+    if (!confirm("Сигурни ли сте, че искате да изтриете тази архивирана поръчка?"))
       return;
     setDeletingId(orderId);
     try {
-      await axios.delete(`/api/archived-orders/${orderId}`, {
-        headers: authHeaders(),
-      });
+      // Cookie sent automatically — no token needed
+      await axios.delete(`/api/archived-orders/${orderId}`);
       await fetchArchivedOrders();
     } catch (err) {
       const msg =
@@ -205,11 +183,11 @@ export default function ArchivedOrdersPage() {
   };
 
   const downloadOrders = async () => {
-    const token = getToken();
     const filteredOrderIds = filteredRows.map((r) => r.orderId).join(",");
     const url = `/api/archived-orders/download?orderIds=${encodeURIComponent(filteredOrderIds)}`;
 
-    const res = await fetch(url, { headers: { "x-auth-token": token } });
+    // credentials: "include" sends the cookie automatically
+    const res = await fetch(url, { credentials: "include" });
     if (!res.ok) {
       const data = await res.json().catch(() => null);
       throw new Error(data?.message || "Failed to download file");
@@ -292,7 +270,6 @@ export default function ArchivedOrdersPage() {
         <div className="p-8 min-h-screen bg-gray-50">
           <h1 className="text-3xl font-bold mb-6">Поръчки за даване</h1>
 
-          {/* Filters */}
           <div className="flex flex-row items-center justify-center gap-2 mb-4">
             <input
               type="text"
@@ -309,9 +286,7 @@ export default function ArchivedOrdersPage() {
               >
                 <option value="">Всички класове</option>
                 {classes.map((grade) => (
-                  <option key={grade} value={grade}>
-                    {grade}
-                  </option>
+                  <option key={grade} value={grade}>{grade}</option>
                 ))}
               </select>
 
@@ -322,15 +297,12 @@ export default function ArchivedOrdersPage() {
               >
                 <option value="">Всички седмици</option>
                 {weeks.map((w) => (
-                  <option key={w.key} value={w.key}>
-                    {w.label}
-                  </option>
+                  <option key={w.key} value={w.key}>{w.label}</option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* Download button — between filters and table */}
           {filteredRows.length > 0 && (
             <div className="flex gap-2 mb-4">
               <ShinyButton onClick={downloadOrders} href="/" className="p-2">
@@ -360,11 +332,9 @@ export default function ArchivedOrdersPage() {
                     <tr key={row.orderId} className="border-b">
                       <td className="border p-2">{row.fullName}</td>
                       <td className="border p-2">{row.grade}</td>
-
                       <td className="border p-2 whitespace-nowrap text-sm">
                         {formatDate(row.weekStart)} → {formatDate(row.weekEnd)}
                       </td>
-
                       <td className="border p-2">
                         {DAYS.map((day) => {
                           const dayData = row.dayMeals[day];
@@ -380,9 +350,7 @@ export default function ArchivedOrdersPage() {
                             <div key={day} className="mb-3">
                               <div className="flex items-center gap-3 flex-wrap">
                                 <strong>{day}:</strong>
-                                <span className="text-xs text-gray-700">
-                                  Получено:
-                                </span>
+                                <span className="text-xs text-gray-700">Получено:</span>
                                 <span
                                   className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
                                     got
@@ -391,13 +359,9 @@ export default function ArchivedOrdersPage() {
                                   }`}
                                 >
                                   {got ? (
-                                    <>
-                                      <Check className="w-4 h-4" /> Да
-                                    </>
+                                    <><Check className="w-4 h-4" /> Да</>
                                   ) : (
-                                    <>
-                                      <X className="w-4 h-4" /> Не
-                                    </>
+                                    <><X className="w-4 h-4" /> Не</>
                                   )}
                                 </span>
                                 <button
@@ -419,14 +383,11 @@ export default function ArchivedOrdersPage() {
                                   )}
                                 </button>
                               </div>
-
                               <ul className="ml-4 mt-1">
                                 {meals.map((meal, i) => (
                                   <li key={i}>
                                     {meal.name} x {meal.quantity} = €
-                                    {(
-                                      (meal.price ?? 0) * (meal.quantity ?? 1)
-                                    ).toFixed(2)}
+                                    {((meal.price ?? 0) * (meal.quantity ?? 1)).toFixed(2)}
                                   </li>
                                 ))}
                               </ul>
@@ -434,15 +395,12 @@ export default function ArchivedOrdersPage() {
                           );
                         })}
                       </td>
-
                       <td className="border p-2 font-bold">
-                        €
-                        {new Intl.NumberFormat("de-DE", {
+                        €{new Intl.NumberFormat("de-DE", {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         }).format(row.total)}
                       </td>
-
                       <td className="border p-2 text-center">
                         <button
                           onClick={() => handleDelete(row.orderId)}
@@ -469,15 +427,11 @@ export default function ArchivedOrdersPage() {
                 >
                   Previous
                 </button>
-
                 <span className="font-semibold">
                   Page {currentPage} of {totalPages || 1}
                 </span>
-
                 <button
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(p + 1, totalPages))
-                  }
+                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
                   disabled={currentPage === totalPages}
                   className="px-4 py-2 border border-[#478BAF] hover:bg-[#478BAF] transition-colors duration-300 hover:text-white rounded-lg disabled:opacity-50"
                 >

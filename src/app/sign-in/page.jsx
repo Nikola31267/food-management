@@ -1,7 +1,5 @@
 "use client";
-
 import { useState, useEffect } from "react";
-import { axiosInstance } from "@/lib/axios";
 import { useRouter } from "next/navigation";
 import Loader from "@/components/layout/Loader";
 import SignInCard from "@/components/auth/SignInCard";
@@ -13,36 +11,31 @@ export default function Login() {
   const router = useRouter();
 
   useEffect(() => {
-    if (
-      localStorage.getItem("data-auth-eduiteh-school-food-management") ||
-      !localStorage.getItem("data-auth-eduiteh-school-food-management") === null ||
-      !localStorage.getItem("data-auth-eduiteh-school-food-management") === ""
-    ) {
-      router.push("/dashboard");
-    } else {
-      setLoadingAuth(false);
-    }
+    // Check if already authenticated via cookie
+    axios.get("/api/auth/me")
+      .then(() => router.push("/dashboard"))
+      .catch(() => setLoadingAuth(false)); // Not logged in, show sign-in
   }, [router]);
 
   const handleGoogleLoginSuccess = async (credentialResponse) => {
     const token = credentialResponse.credential;
-
     try {
-      const response = await axios.post("/api/auth/google-signin", {
-        token,
-      });
-      localStorage.setItem("data-auth-eduiteh-school-food-management", response.data.token);
-      if (response.data.user.role == "teacher") {
+      const response = await axios.post("/api/auth/google-signin", { token });
+      // Cookie is set automatically by the server now
+      if (response.data.user.role === "teacher") {
         router.push("/dashboard");
+      } else {
+        router.push("/grade");
       }
-      router.push("/grade");
     } catch (error) {
       console.error(
         "Google login failed:",
         error.response ? error.response.data : error.message,
       );
+      setError("Google login failed. Please try again.");
     }
   };
+
   const handleGoogleLoginFailure = () => {
     setError("Google login failed");
   };
@@ -57,6 +50,7 @@ export default function Login() {
         <SignInCard
           handleGoogleLoginSuccess={handleGoogleLoginSuccess}
           handleGoogleLoginFailure={handleGoogleLoginFailure}
+          error={error}
         />
       </div>
     </main>

@@ -23,19 +23,11 @@ export default function MyOldOrders() {
       setError("");
 
       try {
-        const userRes = await axios.get("/api/auth/user", {
-          headers: {
-            "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
-          },
-        });
+       const userRes = await axios.get("/api/auth/user");
 
         setUser(userRes.data);
 
-        const res = await axios.get("/api/old-orders", {
-          headers: {
-            "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
-          },
-        });
+       const res = await axios.get("/api/old-orders");
 
         const orders = res.data?.oldOrders || [];
         setOldOrders(orders);
@@ -58,10 +50,10 @@ export default function MyOldOrders() {
     init();
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("data-auth-eduiteh-school-food-management");
-    window.location.reload();
-  };
+  const handleLogout = async () => {
+  await axios.post("/api/auth/sign-out");
+  router.push("/sign-in");
+};
 
   const money = (n) =>
     new Intl.NumberFormat("de-DE", {

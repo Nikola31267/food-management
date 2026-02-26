@@ -5,9 +5,8 @@ import { verifyToken } from "@/lib/auth";
 
 export async function PUT(req) {
   await connectDB();
-
   try {
-    const decoded = verifyToken(req);
+    const decoded = await verifyToken(req); // ← await added
     const { grade } = await req.json();
 
     if (!grade) {
@@ -19,13 +18,19 @@ export async function PUT(req) {
 
     const user = await User.findById(decoded.id);
 
+    if (!user) {
+      return NextResponse.json(
+        { message: "User not found" },
+        { status: 404 },
+      );
+    }
+
     user.grade = grade;
     await user.save();
 
     return NextResponse.json(user);
   } catch (error) {
     console.error(error);
-
     return NextResponse.json(
       { message: error.message || "Server error" },
       { status: 500 },

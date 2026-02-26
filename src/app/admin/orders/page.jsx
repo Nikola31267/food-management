@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Loader from "@/components/layout/Loader";
 import { useRouter } from "next/navigation";
 import { ShinyButton } from "@/components/ui/shiny-button";
-import { Loader2, Trash, Check, X } from "lucide-react";
+import { Loader2, Trash } from "lucide-react";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
@@ -17,8 +17,8 @@ const AdminOrdersPage = () => {
   const [submiting, setSubmiting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClass, setSelectedClass] = useState("");
-  const [selectedPaid, setSelectedPaid] = useState(""); // "paid" | "unpaid" | ""
-  const [selectedRole, setSelectedRole] = useState(""); // "teacher" | "student" | ""
+  const [selectedPaid, setSelectedPaid] = useState("");
+  const [selectedRole, setSelectedRole] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [menuId, setMenuId] = useState(null);
   const ordersPerPage = 5;
@@ -32,27 +32,20 @@ const AdminOrdersPage = () => {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (localStorage.getItem("data-auth-eduiteh-school-food-management")) {
-        try {
-          const response = await axios.get("/api/auth/user", {
-            headers: {
-              "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
-            },
-          });
-          if (response.data.role != "admin") {
-            router.push("/dashboard");
-          }
-          setUser(response.data);
-        } catch (error) {
-          setError("Error fetching user profile");
-          console.error(error);
-        } finally {
-          setLoading(false);
+      try {
+        // Cookie sent automatically — no token needed
+        const response = await axios.get("/api/auth/user");
+        if (response.data.role !== "admin") {
+          router.push("/dashboard");
+          return;
         }
-      } else {
-        setLoading(false);
-        setUser(null);
+        setUser(response.data);
+      } catch (error) {
+        setError("Error fetching user profile");
+        console.error(error);
         router.push("/sign-in");
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -103,11 +96,7 @@ const AdminOrdersPage = () => {
       .join("\r\n");
 
     const BOM = "\uFEFF";
-
-    const blob = new Blob([BOM + csvContent], {
-      type: "text/csv;charset=utf-8",
-    });
-
+    const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -176,7 +165,6 @@ const AdminOrdersPage = () => {
             day.meals.forEach((meal) => {
               const key = normalizeMealName(meal.mealName);
               if (!key) return;
-
               totalsByDay[dayKey][key] =
                 (totalsByDay[dayKey][key] || 0) + (meal.quantity || 0);
             });
@@ -196,27 +184,10 @@ const AdminOrdersPage = () => {
           const ch = text[i];
           const next = text[i + 1];
 
-          if (ch === '"' && inQuotes && next === '"') {
-            cell += '"';
-            i++;
-            continue;
-          }
-          if (ch === '"') {
-            inQuotes = !inQuotes;
-            continue;
-          }
-          if (!inQuotes && ch === ",") {
-            row.push(cell);
-            cell = "";
-            continue;
-          }
-          if (!inQuotes && ch === "\n") {
-            row.push(cell);
-            rows.push(row);
-            row = [];
-            cell = "";
-            continue;
-          }
+          if (ch === '"' && inQuotes && next === '"') { cell += '"'; i++; continue; }
+          if (ch === '"') { inQuotes = !inQuotes; continue; }
+          if (!inQuotes && ch === ",") { row.push(cell); cell = ""; continue; }
+          if (!inQuotes && ch === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; continue; }
           cell += ch;
         }
 
@@ -240,21 +211,11 @@ const AdminOrdersPage = () => {
       for (const r of rows) {
         const p = r.findIndex((c) => normalizeMealName(c) === "цена");
         const q = r.findIndex((c) => normalizeMealName(c) === "брой");
-        if (p !== -1 && q !== -1) {
-          priceCol = p;
-          qtyCol = q;
-          break;
-        }
+        if (p !== -1 && q !== -1) { priceCol = p; qtyCol = q; break; }
       }
 
-      if (priceCol === -1) {
-        toast.error('Не намерих колона "цена" в CSV файла.');
-        return;
-      }
-      if (qtyCol === -1) {
-        toast.error('Не намерих колона "брой" в CSV файла.');
-        return;
-      }
+      if (priceCol === -1) { toast.error('Не намерих колона "цена" в CSV файла.'); return; }
+      if (qtyCol === -1) { toast.error('Не намерих колона "брой" в CSV файла.'); return; }
 
       const totalCol = qtyCol + 1;
       const mealNameCol = Math.max(priceCol - 2, 0);
@@ -269,32 +230,17 @@ const AdminOrdersPage = () => {
         const nameCell = normalizeMealName(r?.[mealNameCol]);
         const qtyCell = String(r?.[qtyCol] ?? "").trim();
         const totalCell = String(r?.[totalCol] ?? "").trim();
-
-        return (
-          !nameCell &&
-          totalCell.includes("€") &&
-          (qtyCell === "" || /^\d/.test(qtyCell))
-        );
+        return (!nameCell && totalCell.includes("€") && (qtyCell === "" || /^\d/.test(qtyCell)));
       };
 
       for (let i = 0; i < rows.length; i++) {
         const r = rows[i];
-
         const cellText = r[mealNameCol];
         const norm = normalizeMealName(cellText);
 
         const detectedDay = detectDayKey(cellText);
-        if (detectedDay) {
-          currentDay = detectedDay;
-          daySum = 0;
-          dayQtySum = 0;
-          continue;
-        }
-
-        if (norm && norm.includes("седмично меню")) {
-          currentDay = null;
-          continue;
-        }
+        if (detectedDay) { currentDay = detectedDay; daySum = 0; dayQtySum = 0; continue; }
+        if (norm && norm.includes("седмично меню")) { currentDay = null; continue; }
 
         if (currentDay) {
           if (isLikelySubtotalRow(r)) {
@@ -304,21 +250,13 @@ const AdminOrdersPage = () => {
           }
 
           if (norm) {
-            const mealKey = norm;
-            const qty = totalsByDay[currentDay]?.[mealKey] || 0;
-
+            const qty = totalsByDay[currentDay]?.[norm] || 0;
             r[qtyCol] = String(qty);
-
             const unitPrice = parseEuro(r[priceCol]);
             const rowTotal = unitPrice * qty;
-
-            if (totalCol < r.length) {
-              r[totalCol] = formatEuro(rowTotal);
-            }
-
+            if (totalCol < r.length) r[totalCol] = formatEuro(rowTotal);
             dayQtySum += qty;
             daySum += rowTotal;
-
             weekQtySum += qty;
             weekSum += rowTotal;
           }
@@ -342,7 +280,6 @@ const AdminOrdersPage = () => {
       const csvOut = toCSV(rows);
       const BOM = "\uFEFF";
       const blob = new Blob([BOM + csvOut], { type: "text/csv;charset=utf-8" });
-
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -363,11 +300,8 @@ const AdminOrdersPage = () => {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get("/api/orders", {
-        headers: {
-          "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
-        },
-      });
+      // Cookie sent automatically — no token needed
+      const res = await axios.get("/api/orders");
       setOrdersData(res.data);
     } catch (err) {
       console.error(err);
@@ -384,15 +318,8 @@ const AdminOrdersPage = () => {
   const markAsPaid = async (userId, orderId) => {
     try {
       setSubmiting(true);
-      await axios.put(
-        `/api/orders/paid/${userId}/${orderId}`,
-        {},
-        {
-          headers: {
-            "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
-          },
-        },
-      );
+      // Cookie sent automatically — no token needed
+      await axios.put(`/api/orders/paid/${userId}/${orderId}`, {});
       toast.success("Поръчката е означена като платена!");
       fetchOrders();
     } catch (err) {
@@ -408,11 +335,8 @@ const AdminOrdersPage = () => {
     setSubmiting(true);
 
     try {
-      await axios.delete(`/api/orders/${userId}/${orderId}?menuId=${menuId}`, {
-        headers: {
-          "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
-        },
-      });
+      // Cookie sent automatically — no token needed
+      await axios.delete(`/api/orders/${userId}/${orderId}?menuId=${menuId}`);
       toast.success("Поръчката е изтрита успешно!");
       fetchOrders();
     } catch (err) {
@@ -424,10 +348,10 @@ const AdminOrdersPage = () => {
   };
 
   const downloadOrders = async () => {
-    const token = localStorage.getItem("data-auth-eduiteh-school-food-management");
     const url = `/api/orders/download?menuId=${encodeURIComponent(menuId)}`;
 
-    const res = await fetch(url, { headers: { "x-auth-token": token } });
+    // credentials: "include" sends the cookie automatically
+    const res = await fetch(url, { credentials: "include" });
     if (!res.ok) {
       const data = await res.json().catch(() => null);
       throw new Error(data?.message || "Failed to download file");
@@ -460,10 +384,8 @@ const AdminOrdersPage = () => {
 
     const matchesPaid = (() => {
       if (!selectedPaid) return true;
-      if (selectedPaid === "paid")
-        return u.orders.every((o) => o.paid === true);
-      if (selectedPaid === "unpaid")
-        return u.orders.some((o) => o.paid === false);
+      if (selectedPaid === "paid") return u.orders.every((o) => o.paid === true);
+      if (selectedPaid === "unpaid") return u.orders.some((o) => o.paid === false);
       return true;
     })();
 
@@ -472,6 +394,7 @@ const AdminOrdersPage = () => {
         ? u.role === "teacher" || u.role === "admin"
         : u.role === selectedRole
       : true;
+
     return matchesName && matchesClass && matchesPaid && matchesRole;
   });
 
@@ -500,7 +423,7 @@ const AdminOrdersPage = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="p-3 border rounded-full w-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
             />
-            <div className="flex gap-2 ">
+            <div className="flex gap-2">
               <select
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
@@ -508,9 +431,7 @@ const AdminOrdersPage = () => {
               >
                 <option value="">Всички класове</option>
                 {classes.map((grade) => (
-                  <option key={grade} value={grade}>
-                    {grade}
-                  </option>
+                  <option key={grade} value={grade}>{grade}</option>
                 ))}
               </select>
               <select
@@ -522,8 +443,6 @@ const AdminOrdersPage = () => {
                 <option value="student">Ученик</option>
                 <option value="teacher">Учител</option>
               </select>
-
-              {/* Paid Filter */}
               <select
                 value={selectedPaid}
                 onChange={(e) => setSelectedPaid(e.target.value)}
@@ -538,27 +457,13 @@ const AdminOrdersPage = () => {
 
           {ordersData.length !== 0 && (
             <div className="flex gap-2">
-              <ShinyButton
-                onClick={downloadFoodByClassCSV}
-                href="/"
-                className="p-2 mb-2 mt-2"
-              >
+              <ShinyButton onClick={downloadFoodByClassCSV} href="/" className="p-2 mb-2 mt-2">
                 Изтегли поръчките (по клас)
               </ShinyButton>
-
-              <ShinyButton
-                onClick={downloadMenuWithCountsCSV}
-                href="/"
-                className="p-2 mb-2 mt-2"
-              >
+              <ShinyButton onClick={downloadMenuWithCountsCSV} href="/" className="p-2 mb-2 mt-2">
                 Изтегли фактура за Бешамел
               </ShinyButton>
-
-              <ShinyButton
-                onClick={downloadOrders}
-                href="/"
-                className="p-2 mb-2 mt-2"
-              >
+              <ShinyButton onClick={downloadOrders} href="/" className="p-2 mb-2 mt-2">
                 Изтегли поръчките за седмицата
               </ShinyButton>
             </div>
@@ -581,20 +486,16 @@ const AdminOrdersPage = () => {
                     <th className="border p-2">Действия</th>
                   </tr>
                 </thead>
-
                 <tbody>
                   {paginatedOrders.map((u) =>
                     u.orders.map((week) => (
                       <tr key={`${u._id}-${week._id}`} className="border-b">
                         <td className="border p-2">{u.fullName}</td>
                         <td className="border p-2">{u.grade}</td>
-
                         <td className="border p-2">
                           {week.days.map((day) => (
                             <div key={day.day} className="mb-3">
-                              <strong className="text-sm font-semibold capitalize">
-                                {day.day}
-                              </strong>
+                              <strong className="text-sm font-semibold capitalize">{day.day}</strong>
                               <ul className="ml-4 mt-1">
                                 {day.meals.map((meal) => (
                                   <li key={meal.mealName}>
@@ -614,12 +515,10 @@ const AdminOrdersPage = () => {
                             maximumFractionDigits: 2,
                           }).format(week.totalPrice)}
                         </td>
-
                         <td className="border p-2 text-center">
                           {week.paid ? (
                             <div className="text-green-600 font-bold flex flex-col gap-4">
                               <div>Платено</div>
-
                               {week.approvedBy?.fullName && (
                                 <div className="text-xs font-normal text-gray-600">
                                   Одобрил: {week.approvedBy.fullName}
@@ -640,18 +539,13 @@ const AdminOrdersPage = () => {
                             </button>
                           )}
                         </td>
-
                         <td className="border p-2 text-center">
                           <button
                             onClick={() => deleteOrder(u._id, week._id)}
                             disabled={submiting}
                             className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors duration-300 disabled:opacity-50"
                           >
-                            {submiting ? (
-                              <Loader2 className="animate-spin" />
-                            ) : (
-                              <Trash />
-                            )}
+                            {submiting ? <Loader2 className="animate-spin" /> : <Trash />}
                           </button>
                         </td>
                       </tr>
@@ -668,15 +562,11 @@ const AdminOrdersPage = () => {
                 >
                   Previous
                 </button>
-
                 <span className="font-semibold">
                   Page {currentPage} of {totalPages || 1}
                 </span>
-
                 <button
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(p + 1, totalPages))
-                  }
+                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
                   disabled={currentPage === totalPages}
                   className="px-4 py-2 border border-[#478BAF] hover:bg-[#478BAF] transition-colors duration-300 hover:text-white rounded-lg disabled:opacity-50"
                 >

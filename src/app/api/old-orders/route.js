@@ -7,7 +7,7 @@ export async function GET(req) {
   await connectDB();
 
   try {
-    const decoded = verifyToken(req);
+    const decoded = await verifyToken(req);
     const me = await User.findById(decoded.id).lean();
 
     if (!me) {

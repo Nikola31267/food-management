@@ -8,7 +8,7 @@ export async function DELETE(req, { params }) {
   await connectDB();
 
   try {
-    const decoded = verifyToken(req);
+    const decoded = await verifyToken(req);
     const user = await User.findById(decoded.id);
 
     if (user.role !== "admin") {

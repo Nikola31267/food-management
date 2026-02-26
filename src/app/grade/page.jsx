@@ -10,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useEffect, useState } from "react";
-import { axiosInstance } from "@/lib/axios";
 import { useRouter } from "next/navigation";
 import Loader from "@/components/layout/Loader";
 import { ChevronRight } from "lucide-react";
@@ -35,17 +34,9 @@ export default function DropdownMenuBasic() {
 
   useEffect(() => {
     const checkAuthAndAccess = async () => {
-      if (!localStorage.getItem("data-auth-eduiteh-school-food-management")) {
-        router.push("/sign-in");
-        return;
-      }
-
       try {
-        const response = await axios.get("/api/auth/user", {
-          headers: {
-            "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
-          },
-        });
+        // Cookie sent automatically — no token needed
+        const response = await axios.get("/api/auth/user");
         setUser(response.data);
 
         if (response.data.grade) {
@@ -54,7 +45,6 @@ export default function DropdownMenuBasic() {
           setLoadingAuth(false);
         }
       } catch (error) {
-        setError("Failed to fetch user data");
         router.push("/sign-in");
       }
     };
@@ -71,15 +61,8 @@ export default function DropdownMenuBasic() {
     try {
       setLoading(true);
 
-      await axios.put(
-        "/api/auth/grade",
-        { grade: selectedGrade },
-        {
-          headers: {
-            "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
-          },
-        },
-      );
+      // Cookie sent automatically — no token needed
+      await axios.put("/api/auth/grade", { grade: selectedGrade });
 
       toast.success("Класът е запазен успешно. Добре дошли!");
       router.push("/dashboard");
@@ -91,9 +74,9 @@ export default function DropdownMenuBasic() {
     }
   };
 
-  const signOut = () => {
-    localStorage.removeItem("data-auth-eduiteh-school-food-management");
-    window.location.reload();
+  const signOut = async () => {
+    await axios.post("/api/auth/sign-out");
+    router.push("/sign-in");
   };
 
   if (loadingAuth) {

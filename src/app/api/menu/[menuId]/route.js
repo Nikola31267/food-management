@@ -16,7 +16,7 @@ export async function DELETE(req, { params }) {
   await connectDB();
 
   try {
-    const decoded = verifyToken(req);
+    const decoded = await verifyToken(req); // ← await added
     const admin = await User.findById(decoded.id);
 
     if (!admin || admin.role !== "admin") {
@@ -56,7 +56,6 @@ export async function DELETE(req, { params }) {
           .filter((o) => o.menuId.toString() === menuId)
           .forEach((order) => {
             row.Total += order.totalPrice || 0;
-
             order.days?.forEach((day) => {
               row[day.day] =
                 day.meals
@@ -125,11 +124,7 @@ export async function DELETE(req, { params }) {
 
     const menuDate =
       menu.weekStart && menu.weekEnd
-        ? `${new Date(menu.weekStart).toISOString().slice(0, 10)} - ${new Date(
-            menu.weekEnd,
-          )
-            .toISOString()
-            .slice(0, 10)}`
+        ? `${new Date(menu.weekStart).toISOString().slice(0, 10)} - ${new Date(menu.weekEnd).toISOString().slice(0, 10)}`
         : menu.weekStart
           ? new Date(menu.weekStart).toISOString().slice(0, 10)
           : String(menuId);
@@ -150,8 +145,8 @@ export async function DELETE(req, { params }) {
           name: u.fullName || "—",
           grade: u.grade || "—",
           total: unpaidTotal,
-          week: menuDate, // ← was menuDate, schema field is "week"
-          email: u.email || "—", // ← added from user
+          week: menuDate,
+          email: u.email || "—",
         });
       }
     });
@@ -188,7 +183,7 @@ export async function PUT(req, { params }) {
   await connectDB();
 
   try {
-    const decoded = verifyToken(req);
+    const decoded = await verifyToken(req); // ← await added
     const admin = await User.findById(decoded.id);
 
     if (!admin || admin.role !== "admin") {
@@ -202,7 +197,6 @@ export async function PUT(req, { params }) {
 
     const body = await req.json();
 
-    // Basic validation (keep it light, your UI already formats well)
     if (!body?.orderDeadline) {
       return NextResponse.json(
         { message: "orderDeadline is required" },
@@ -210,7 +204,6 @@ export async function PUT(req, { params }) {
       );
     }
 
-    // Normalize/clean days/meals the same way your frontend builds them
     const days = Array.isArray(body.days) ? body.days : [];
     const normalizedDays = days.map((d) => ({
       day: String(d.day || "").trim(),
@@ -233,11 +226,8 @@ export async function PUT(req, { params }) {
       days: normalizedDays,
     };
 
-    // If you store CSV in the menu document, allow updating it too
-    // (Frontend PUT currently does NOT send these, but this supports it if you decide to)
     if (typeof body.menuFile === "string") updateDoc.menuFile = body.menuFile;
-    if (typeof body.menuFileName === "string")
-      updateDoc.menuFileName = body.menuFileName;
+    if (typeof body.menuFileName === "string") updateDoc.menuFileName = body.menuFileName;
 
     const updated = await WeeklyMenu.findByIdAndUpdate(menuId, updateDoc, {
       new: true,

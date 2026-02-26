@@ -25,51 +25,37 @@ export default function DailyOrdersPage() {
   const [savingDay, setSavingDay] = useState(null);
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
-  const [weeks, setWeeks] = useState([]); // list of available weeks from archivedOrders
-  const [selectedWeek, setSelectedWeek] = useState(""); // "weekStart__weekEnd"
+  const [weeks, setWeeks] = useState([]);
+  const [selectedWeek, setSelectedWeek] = useState("");
   const router = useRouter();
 
-  function getToken() {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("data-auth-eduiteh-school-food-management");
-  }
+  // Removed getToken() — cookies are sent automatically
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (localStorage.getItem("data-auth-eduiteh-school-food-management")) {
-        try {
-          const response = await axios.get("/api/auth/user", {
-            headers: {
-              "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
-            },
-          });
-          setUser(response.data);
-          if (response.data.role !== "admin") {
-            router.push("/dashboard");
-          }
-        } catch (error) {
-          setError("Error fetching user profile");
-          console.error(error);
+      try {
+        // Cookie sent automatically — no token needed
+        const response = await axios.get("/api/auth/user");
+        setUser(response.data);
+        if (response.data.role !== "admin") {
+          router.push("/dashboard");
         }
-      } else {
-        setUser(null);
-        router.push("/dashboard");
+      } catch (error) {
+        setError("Error fetching user profile");
+        console.error(error);
+        router.push("/sign-in");
       }
     };
 
     fetchUserProfile();
   }, []);
 
-  // Fetch available weeks from archivedOrders
   useEffect(() => {
     const fetchWeeks = async () => {
       try {
-        const token = getToken();
-        const { data } = await axios.get("/api/archived-orders", {
-          headers: { "x-auth-token": token },
-        });
+        // Cookie sent automatically — no token needed
+        const { data } = await axios.get("/api/archived-orders");
 
-        // Collect unique weeks
         const weekMap = new Map();
         data.data.forEach((student) => {
           student.archivedOrders.forEach((order) => {
@@ -85,17 +71,12 @@ export default function DailyOrdersPage() {
           });
         });
 
-        // Sort newest first
         const sorted = [...weekMap.values()].sort(
           (a, b) => new Date(b.weekStart) - new Date(a.weekStart),
         );
 
         setWeeks(sorted);
-
-        // Auto-select the most recent week
-        if (sorted.length > 0) {
-          setSelectedWeek(sorted[0].key);
-        }
+        if (sorted.length > 0) setSelectedWeek(sorted[0].key);
       } catch (err) {
         console.error(err);
         setError("Грешка при зареждане на седмиците.");
@@ -108,21 +89,15 @@ export default function DailyOrdersPage() {
   async function load() {
     if (!selectedWeek) return;
 
-    const token = getToken();
-    if (!token) {
-      setError("No token please login.");
-      return;
-    }
-
     const [weekStart, weekEnd] = selectedWeek.split("__");
 
     try {
       setLoading(true);
       setError("");
 
+      // Cookie sent automatically — no token needed
       const res = await axios.get("/api/verify-count-archived", {
         params: { weekStart, weekEnd },
-        headers: { "x-auth-token": token },
       });
 
       const hydrated = res.data.map((d) => ({
@@ -170,12 +145,6 @@ export default function DailyOrdersPage() {
   }
 
   async function saveDay(day) {
-    const token = getToken();
-    if (!token) {
-      setError("No token found");
-      return;
-    }
-
     if (!selectedWeek) return;
     const [weekStart] = selectedWeek.split("__");
 
@@ -184,6 +153,8 @@ export default function DailyOrdersPage() {
 
     try {
       const current = dayMap.find((d) => d.day === day);
+
+      // Cookie sent automatically — no token needed
       await axios.put(
         `/api/verify-count-archived/${encodeURIComponent(day)}`,
         {
@@ -193,10 +164,7 @@ export default function DailyOrdersPage() {
               x.deliveredCount === "" ? 0 : Number(x.deliveredCount),
           })),
         },
-        {
-          params: { weekStart },
-          headers: { "x-auth-token": token },
-        },
+        { params: { weekStart } },
       );
 
       await load();
@@ -216,7 +184,6 @@ export default function DailyOrdersPage() {
 
       <main className="lg:pl-64">
         <div className="mx-auto max-w-5xl px-4 py-10">
-          {/* Week selector */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Изберете седмица
@@ -228,9 +195,7 @@ export default function DailyOrdersPage() {
             >
               <option value="">-- Изберете седмица --</option>
               {weeks.map((w) => (
-                <option key={w.key} value={w.key}>
-                  {w.label}
-                </option>
+                <option key={w.key} value={w.key}>{w.label}</option>
               ))}
             </select>
           </div>
@@ -250,23 +215,14 @@ export default function DailyOrdersPage() {
             <div className="mt-6 grid gap-4">
               {dayMap.map((d) => {
                 const totalExpected = (d.items || []).reduce(
-                  (s, x) => s + (Number(x.expectedCount) || 0),
-                  0,
+                  (s, x) => s + (Number(x.expectedCount) || 0), 0,
                 );
-
                 const totalDelivered = (d.items || []).reduce((s, x) => {
-                  const v =
-                    x.deliveredCount === "" ? null : Number(x.deliveredCount);
+                  const v = x.deliveredCount === "" ? null : Number(x.deliveredCount);
                   return s + (v ?? 0);
                 }, 0);
-
-                const anyEmpty = (d.items || []).some(
-                  (x) => x.deliveredCount === "",
-                );
-                const totalDiff = anyEmpty
-                  ? null
-                  : totalDelivered - totalExpected;
-
+                const anyEmpty = (d.items || []).some((x) => x.deliveredCount === "");
+                const totalDiff = anyEmpty ? null : totalDelivered - totalExpected;
                 const diffColor =
                   totalDiff === null || totalDiff === 0
                     ? "text-slate-800"
@@ -275,33 +231,16 @@ export default function DailyOrdersPage() {
                       : "text-emerald-700";
 
                 return (
-                  <section
-                    key={d.day}
-                    className="rounded-2xl border bg-white shadow-sm"
-                  >
+                  <section key={d.day} className="rounded-2xl border bg-white shadow-sm">
                     <div className="flex flex-col gap-3 border-b px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0">
-                        <h3 className="text-lg font-semibold text-slate-900">
-                          {d.day}
-                        </h3>
-
+                        <h3 className="text-lg font-semibold text-slate-900">{d.day}</h3>
                         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
-                          <span>
-                            Очаквани:{" "}
-                            <b className="text-slate-900">{totalExpected}</b>
-                          </span>
+                          <span>Очаквани: <b className="text-slate-900">{totalExpected}</b></span>
                           <span className="h-1 w-1 rounded-full bg-slate-300" />
-                          <span>
-                            Доставени:{" "}
-                            <b className="text-slate-900">{totalDelivered}</b>
-                          </span>
+                          <span>Доставени: <b className="text-slate-900">{totalDelivered}</b></span>
                           <span className="h-1 w-1 rounded-full bg-slate-300" />
-                          <span>
-                            Разлика:{" "}
-                            <b className={diffColor}>
-                              {totalDiff === null ? "—" : totalDiff}
-                            </b>
-                          </span>
+                          <span>Разлика: <b className={diffColor}>{totalDiff === null ? "—" : totalDiff}</b></span>
                         </div>
                       </div>
 
@@ -338,31 +277,16 @@ export default function DailyOrdersPage() {
                             <table className="w-full border-collapse">
                               <thead className="bg-slate-50">
                                 <tr>
-                                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-                                    Артикул
-                                  </th>
-                                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-                                    Очаквани
-                                  </th>
-                                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-                                    Доставени
-                                  </th>
-                                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-                                    Разлика
-                                  </th>
+                                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Артикул</th>
+                                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Очаквани</th>
+                                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Доставени</th>
+                                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">Разлика</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y">
                                 {d.items.map((x) => {
-                                  const deliveredNum =
-                                    x.deliveredCount === ""
-                                      ? null
-                                      : Number(x.deliveredCount);
-                                  const diff =
-                                    deliveredNum === null
-                                      ? null
-                                      : deliveredNum - x.expectedCount;
-
+                                  const deliveredNum = x.deliveredCount === "" ? null : Number(x.deliveredCount);
+                                  const diff = deliveredNum === null ? null : deliveredNum - x.expectedCount;
                                   const rowDiffColor =
                                     diff === null || diff === 0
                                       ? "text-slate-700"
@@ -371,31 +295,18 @@ export default function DailyOrdersPage() {
                                         : "text-emerald-700";
 
                                   return (
-                                    <tr
-                                      key={x.mealName}
-                                      className="hover:bg-slate-50/70"
-                                    >
+                                    <tr key={x.mealName} className="hover:bg-slate-50/70">
                                       <td className="px-4 py-3">
-                                        <div className="truncate font-medium text-slate-900">
-                                          {x.mealName}
-                                        </div>
+                                        <div className="truncate font-medium text-slate-900">{x.mealName}</div>
                                       </td>
-                                      <td className="px-4 py-3 font-mono text-sm text-slate-700">
-                                        {x.expectedCount}
-                                      </td>
+                                      <td className="px-4 py-3 font-mono text-sm text-slate-700">{x.expectedCount}</td>
                                       <td className="px-4 py-3">
                                         <input
                                           type="number"
                                           min="0"
                                           inputMode="numeric"
                                           value={x.deliveredCount}
-                                          onChange={(e) =>
-                                            updateDelivered(
-                                              d.day,
-                                              x.mealName,
-                                              e.target.value,
-                                            )
-                                          }
+                                          onChange={(e) => updateDelivered(d.day, x.mealName, e.target.value)}
                                           className={[
                                             "w-28 rounded-lg border px-3 py-2 text-sm",
                                             "bg-white text-slate-900 shadow-sm",
@@ -403,9 +314,7 @@ export default function DailyOrdersPage() {
                                           ].join(" ")}
                                         />
                                       </td>
-                                      <td
-                                        className={`px-4 py-3 font-mono text-sm ${rowDiffColor}`}
-                                      >
+                                      <td className={`px-4 py-3 font-mono text-sm ${rowDiffColor}`}>
                                         {diff === null ? "—" : diff}
                                       </td>
                                     </tr>

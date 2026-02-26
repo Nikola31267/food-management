@@ -10,7 +10,7 @@ const DAY_ORDER = ["Понеделник", "Вторник", "Сряда", "Че
 export async function GET(req) {
   try {
     await connectDB();
-    const decoded = verifyToken(req);
+    const decoded = await verifyToken(req);
     if (!decoded) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }

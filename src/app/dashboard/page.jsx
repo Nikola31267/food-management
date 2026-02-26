@@ -56,43 +56,43 @@ export default function Dashboard() {
     fetchMenu();
   }, []);
 
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const token = localStorage.getItem("data-auth-eduiteh-school-food-management");
-        if (!token) return router.push("/sign-in");
+// Fetch user ONCE on mount
+useEffect(() => {
+  const init = async () => {
+    try {
+      const userRes = await axios.get("/api/auth/user");
+      setUser(userRes.data);
 
-        const userRes = await axios.get("/api/auth/user", {
-          headers: { "x-auth-token": token },
-        });
-
-        setUser(userRes.data);
-
-        const latestMenuId = menu?._id;
-        const userOrderForMenu = userRes.data.orders?.find(
-          (o) => o.menuId === latestMenuId,
-        );
-
-        if (userOrderForMenu) {
-          setHasOrdered(true);
-          setSavedOrder(userOrderForMenu);
-        }
-
-        if (!userRes.data.grade) router.push("/grade");
-      } catch {
-        router.push("/sign-in");
-      } finally {
-        setLoading(false);
+      if (!userRes.data.grade && userRes.data.role !== "teacher" && userRes.data.role !== "admin") {
+        router.push("/grade");
+        return;
       }
-    };
-
-    init();
-  }, [router, menu]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("data-auth-eduiteh-school-food-management");
-    window.location.reload();
+    } catch {
+      router.push("/sign-in");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  init();
+}, [router]); // ← removed menu dependency
+
+// Check order separately when menu loads
+useEffect(() => {
+  if (!user || !menu?._id) return;
+
+  const userOrderForMenu = user.orders?.find((o) => o.menuId === menu._id);
+  if (userOrderForMenu) {
+    setHasOrdered(true);
+    setSavedOrder(userOrderForMenu);
+  }
+}, [user, menu]);
+
+const handleLogout = async () => {
+  await axios.post("/api/auth/sign-out");
+  router.push("/sign-in");
+};
+
 
   const getOrderedDay = (dayName) => {
     if (!savedOrder) return null;
@@ -178,15 +178,7 @@ export default function Dashboard() {
     setSubmiting(true);
 
     try {
-      await axios.post(
-        "/api/order",
-        { weeklyOrder, totalPrice },
-        {
-          headers: {
-            "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
-          },
-        },
-      );
+      await axios.post("/api/order", { weeklyOrder, totalPrice });
 
       const newSavedOrder = {
         menuId: menu._id,

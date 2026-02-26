@@ -21,18 +21,9 @@ const page = () => {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      const token = localStorage.getItem("data-auth-eduiteh-school-food-management");
-      if (!token) {
-        setLoading(false);
-        setUser(null);
-        router.push("/dashboard");
-        return;
-      }
-
       try {
-        const response = await axios.get("/api/auth/user", {
-          headers: { "x-auth-token": token },
-        });
+        // Cookie sent automatically — no token needed
+        const response = await axios.get("/api/auth/user");
         setUser(response.data);
         if (response.data.role !== "admin") {
           router.push("/dashboard");
@@ -41,12 +32,11 @@ const page = () => {
 
         // Fetch students after confirming admin
         setLoadingStudents(true);
-        const studentsRes = await axios.get("/api/students/get", {
-          headers: { "x-auth-token": token },
-        });
+        const studentsRes = await axios.get("/api/students/get");
         setStudents(studentsRes.data);
       } catch (error) {
         console.error(error);
+        router.push("/sign-in");
       } finally {
         setLoading(false);
         setLoadingStudents(false);
@@ -66,12 +56,8 @@ const page = () => {
       setSubmiting(true);
       setDeletingId(id);
 
-      await axios.delete("/api/students/delete", {
-        data: { id },
-        headers: {
-          "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
-        },
-      });
+      // Cookie sent automatically — no token needed
+      await axios.delete("/api/students/delete", { data: { id } });
 
       setStudents((prev) => prev.filter((s) => s._id !== id));
     } catch (e) {
@@ -87,10 +73,8 @@ const page = () => {
     return students.filter((s) => {
       const name = (s.fullName || s.email || "").toLowerCase();
       const matchesSearch = name.includes(search.toLowerCase());
-
       const matchesGrade =
         !gradeFilter || String(s.grade) === String(gradeFilter);
-
       return matchesSearch && matchesGrade;
     });
   }, [students, search, gradeFilter]);
@@ -120,7 +104,6 @@ const page = () => {
             onChange={(e) => setSearch(e.target.value)}
             className="mb-4 p-3 border rounded-full w-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
           />
-
           <div>
             <select
               value={gradeFilter}
@@ -129,9 +112,7 @@ const page = () => {
             >
               <option value="">Всички класове</option>
               {grades.map((g) => (
-                <option key={g} value={g}>
-                  Клас {g}
-                </option>
+                <option key={g} value={g}>Клас {g}</option>
               ))}
             </select>
           </div>
@@ -147,7 +128,6 @@ const page = () => {
                   <th className="p-3 w-16">Действия</th>
                 </tr>
               </thead>
-
               <tbody>
                 {!loadingStudents && filteredStudents.length === 0 && (
                   <tr>
@@ -156,7 +136,6 @@ const page = () => {
                     </td>
                   </tr>
                 )}
-
                 {students.map((s) => (
                   <tr key={s._id} className="border-t">
                     <td className="p-3">{s.fullName || s.email || "—"}</td>
