@@ -94,7 +94,10 @@ const page = () => {
     <div className="min-h-screen">
       <SidebarNav user={user} />
 
-      <main className="lg:pl-64 p-4 ml-4">
+      <main
+        style={{ paddingLeft: "var(--sidebar-width, 16rem)" }}
+        className="transition-all duration-300"
+      >
         <h1 className="text-2xl font-semibold mb-4">Ученици</h1>
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
           <input
@@ -112,7 +115,9 @@ const page = () => {
             >
               <option value="">Всички класове</option>
               {grades.map((g) => (
-                <option key={g} value={g}>Клас {g}</option>
+                <option key={g} value={g}>
+                  Клас {g}
+                </option>
               ))}
             </select>
           </div>

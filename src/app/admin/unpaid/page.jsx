@@ -73,7 +73,10 @@ export default function UnpaidPage() {
     <div className="min-h-screen bg-gray-50">
       <SidebarNav user={user} />
 
-      <main className="lg:pl-64 p-6 ml-6">
+      <main
+        style={{ paddingLeft: "var(--sidebar-width, 16rem)" }}
+        className="transition-all duration-300"
+      >
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">Неплатени Поръчки</h1>
 
@@ -84,7 +87,9 @@ export default function UnpaidPage() {
             disabled={fetching}
             className="border-border bg-[#478BAF] text-white hover:bg-[#317faa] hover:text-white transition-colors duration-300"
           >
-            <RefreshCw className={`h-4 w-4 ${fetching ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`h-4 w-4 ${fetching ? "animate-spin" : ""}`}
+            />
           </Button>
         </div>
 
@@ -95,34 +100,58 @@ export default function UnpaidPage() {
             <table className="min-w-[900px] w-full border-collapse">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="border px-3 py-2 text-left text-sm font-semibold">Ime</th>
-                  <th className="border px-3 py-2 text-left text-sm font-semibold">Клас</th>
-                  <th className="border px-3 py-2 text-left text-sm font-semibold">Имейл</th>
-                  <th className="border px-3 py-2 text-left text-sm font-semibold">Седмица</th>
-                  <th className="border px-3 py-2 text-left text-sm font-semibold">Дължима сума</th>
-                  <th className="border px-3 py-2 text-left text-sm font-semibold">Действия</th>
+                  <th className="border px-3 py-2 text-left text-sm font-semibold">
+                    Ime
+                  </th>
+                  <th className="border px-3 py-2 text-left text-sm font-semibold">
+                    Клас
+                  </th>
+                  <th className="border px-3 py-2 text-left text-sm font-semibold">
+                    Имейл
+                  </th>
+                  <th className="border px-3 py-2 text-left text-sm font-semibold">
+                    Седмица
+                  </th>
+                  <th className="border px-3 py-2 text-left text-sm font-semibold">
+                    Дължима сума
+                  </th>
+                  <th className="border px-3 py-2 text-left text-sm font-semibold">
+                    Действия
+                  </th>
                 </tr>
               </thead>
 
               <tbody>
                 {orders.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="border px-3 py-4 text-center text-sm text-gray-500">
+                    <td
+                      colSpan={6}
+                      className="border px-3 py-4 text-center text-sm text-gray-500"
+                    >
                       Няма неплатени поръчки.
                     </td>
                   </tr>
                 ) : (
                   orders.map((o) => (
                     <tr key={o._id} className="hover:bg-gray-50">
-                      <td className="border px-3 py-2 text-sm">{o.name || "—"}</td>
-                      <td className="border px-3 py-2 text-sm">{o.grade || "—"}</td>
-                      <td className="border px-3 py-2 text-sm">{o.email || "—"}</td>
-                      <td className="border px-3 py-2 text-sm">{o.week || "—"}</td>
+                      <td className="border px-3 py-2 text-sm">
+                        {o.name || "—"}
+                      </td>
+                      <td className="border px-3 py-2 text-sm">
+                        {o.grade || "—"}
+                      </td>
+                      <td className="border px-3 py-2 text-sm">
+                        {o.email || "—"}
+                      </td>
+                      <td className="border px-3 py-2 text-sm">
+                        {o.week || "—"}
+                      </td>
                       <td className="border px-3 py-2 text-sm font-bold">
                         {new Intl.NumberFormat("de-DE", {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
-                        }).format(o.total)}{" "}€
+                        }).format(o.total)}{" "}
+                        €
                       </td>
                       <td className="border px-3 py-2 text-sm">
                         <button

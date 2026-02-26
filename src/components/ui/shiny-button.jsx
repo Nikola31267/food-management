@@ -23,7 +23,7 @@ export const ShinyButton = ({
         !disabled &&
         "group relative flex transform items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-md border border-white bg-[#478BAF] px-8 text-base/7 font-medium text-white transition-all duration-300 hover:ring-2 hover:ring-[#478BAF] hover:ring-offset-2 focus:outline-none focus:ring-2 focus:ring-offset-2"
       }`,
-      "group relative flex transform items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-md border border-white bg-[#478BAF] px-8 text-base/7 font-medium text-white transition-all duration-300",
+      "group relative flex transform items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-md border border-white bg-[#478BAF] px-8 text-base/7 font-medium text-white transition-all duration-300 z-0",
       className,
       disabled && "opacity-50 cursor-not-allowed",
     )}

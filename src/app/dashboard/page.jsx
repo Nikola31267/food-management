@@ -56,43 +56,46 @@ export default function Dashboard() {
     fetchMenu();
   }, []);
 
-// Fetch user ONCE on mount
-useEffect(() => {
-  const init = async () => {
-    try {
-      const userRes = await axios.get("/api/auth/user");
-      setUser(userRes.data);
+  // Fetch user ONCE on mount
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const userRes = await axios.get("/api/auth/user");
+        setUser(userRes.data);
 
-      if (!userRes.data.grade && userRes.data.role !== "teacher" && userRes.data.role !== "admin") {
-        router.push("/grade");
-        return;
+        if (
+          !userRes.data.grade &&
+          userRes.data.role !== "teacher" &&
+          userRes.data.role !== "admin"
+        ) {
+          router.push("/grade");
+          return;
+        }
+      } catch {
+        router.push("/sign-in");
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      router.push("/sign-in");
-    } finally {
-      setLoading(false);
+    };
+
+    init();
+  }, [router]); // ← removed menu dependency
+
+  // Check order separately when menu loads
+  useEffect(() => {
+    if (!user || !menu?._id) return;
+
+    const userOrderForMenu = user.orders?.find((o) => o.menuId === menu._id);
+    if (userOrderForMenu) {
+      setHasOrdered(true);
+      setSavedOrder(userOrderForMenu);
     }
+  }, [user, menu]);
+
+  const handleLogout = async () => {
+    await axios.post("/api/auth/sign-out");
+    router.push("/sign-in");
   };
-
-  init();
-}, [router]); // ← removed menu dependency
-
-// Check order separately when menu loads
-useEffect(() => {
-  if (!user || !menu?._id) return;
-
-  const userOrderForMenu = user.orders?.find((o) => o.menuId === menu._id);
-  if (userOrderForMenu) {
-    setHasOrdered(true);
-    setSavedOrder(userOrderForMenu);
-  }
-}, [user, menu]);
-
-const handleLogout = async () => {
-  await axios.post("/api/auth/sign-out");
-  router.push("/sign-in");
-};
-
 
   const getOrderedDay = (dayName) => {
     if (!savedOrder) return null;

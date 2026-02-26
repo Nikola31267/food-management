@@ -72,17 +72,23 @@ export default function ArchivedOrdersPage() {
 
   const classes = useMemo(() => [...new Set(rows.map((r) => r.grade))], [rows]);
 
-const weeks = useMemo(() => [
-  ...new Map(
-    rows
-      .map((r) => ({
-        key: weekKey(r.weekStart, r.weekEnd),
-        label: `${formatDate(r.weekStart)} → ${formatDate(r.weekEnd)}`,
-      }))
-      .sort((a, b) => new Date(b.key.split("__")[0]) - new Date(a.key.split("__")[0]))
-      .map((w) => [w.key, w]),
-  ).values(),
-], [rows]);
+  const weeks = useMemo(
+    () => [
+      ...new Map(
+        rows
+          .map((r) => ({
+            key: weekKey(r.weekStart, r.weekEnd),
+            label: `${formatDate(r.weekStart)} → ${formatDate(r.weekEnd)}`,
+          }))
+          .sort(
+            (a, b) =>
+              new Date(b.key.split("__")[0]) - new Date(a.key.split("__")[0]),
+          )
+          .map((w) => [w.key, w]),
+      ).values(),
+    ],
+    [rows],
+  );
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -147,32 +153,32 @@ const weeks = useMemo(() => [
     fetchArchivedOrders();
   }, []);
 
- useEffect(() => {
-  setCurrentPage(1);
-}, [searchTerm, selectedClass, selectedWeek, selectedDay]);;
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedClass, selectedWeek, selectedDay]);
 
   // Auto-select current week and day
-useEffect(() => {
-  if (rows.length === 0) return;
+  useEffect(() => {
+    if (rows.length === 0) return;
 
-  const today = new Date();
-  const todayTime = today.getTime();
+    const today = new Date();
+    const todayTime = today.getTime();
 
-  // Auto-select week
-  const matchingWeek = weeks.find((w) => {
-    const [startStr, endStr] = w.key.split("__");
-    const start = new Date(startStr).getTime();
-    const end = new Date(endStr).getTime() + 86400000; // inclusive
-    return todayTime >= start && todayTime <= end;
-  });
-  if (matchingWeek && !selectedWeek) setSelectedWeek(matchingWeek.key);
+    // Auto-select week
+    const matchingWeek = weeks.find((w) => {
+      const [startStr, endStr] = w.key.split("__");
+      const start = new Date(startStr).getTime();
+      const end = new Date(endStr).getTime() + 86400000; // inclusive
+      return todayTime >= start && todayTime <= end;
+    });
+    if (matchingWeek && !selectedWeek) setSelectedWeek(matchingWeek.key);
 
-  // Auto-select day (0=Sun,1=Mon,...,5=Fri,6=Sat)
-  const dayIndex = today.getDay(); // 1=Mon ... 5=Fri
-  if (dayIndex >= 1 && dayIndex <= 5 && !selectedDay) {
-    setSelectedDay(DAYS[dayIndex - 1]); // DAYS[0]=Понеделник ... DAYS[4]=Петък
-  }
-}, [rows]);
+    // Auto-select day (0=Sun,1=Mon,...,5=Fri,6=Sat)
+    const dayIndex = today.getDay(); // 1=Mon ... 5=Fri
+    if (dayIndex >= 1 && dayIndex <= 5 && !selectedDay) {
+      setSelectedDay(DAYS[dayIndex - 1]); // DAYS[0]=Понеделник ... DAYS[4]=Петък
+    }
+  }, [rows]);
 
   const handleToggleOrderGot = async (row, day) => {
     const dayData = row.dayMeals[day];
@@ -200,7 +206,9 @@ useEffect(() => {
   };
 
   const handleDelete = async (orderId) => {
-    if (!confirm("Сигурни ли сте, че искате да изтриете тази архивирана поръчка?"))
+    if (
+      !confirm("Сигурни ли сте, че искате да изтриете тази архивирана поръчка?")
+    )
       return;
     setDeletingId(orderId);
     try {
@@ -267,17 +275,20 @@ useEffect(() => {
     );
   }
 
- ;
-
-const filteredRows = rows
-  .filter((r) => {
-    const matchesName = (r.fullName || "").toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredRows = rows.filter((r) => {
+    const matchesName = (r.fullName || "")
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
     const matchesClass = selectedClass ? r.grade === selectedClass : true;
-    const matchesWeek = selectedWeek ? weekKey(r.weekStart, r.weekEnd) === selectedWeek : true;
+    const matchesWeek = selectedWeek
+      ? weekKey(r.weekStart, r.weekEnd) === selectedWeek
+      : true;
     // If a day is selected, only keep rows that have meals on that day
-    const matchesDay = selectedDay ? r.dayMeals[selectedDay]?.meals.length > 0 : true;
+    const matchesDay = selectedDay
+      ? r.dayMeals[selectedDay]?.meals.length > 0
+      : true;
     return matchesName && matchesClass && matchesWeek && matchesDay;
-  });;
+  });
 
   const totalPages = Math.ceil(filteredRows.length / ordersPerPage);
   const paginatedRows = filteredRows.slice(
@@ -288,7 +299,10 @@ const filteredRows = rows
   return (
     <div className="min-h-screen">
       <SidebarNav user={user} />
-      <main className="lg:pl-64">
+      <main
+        style={{ paddingLeft: "var(--sidebar-width, 16rem)" }}
+        className="transition-all duration-300"
+      >
         <div className="p-8 min-h-screen bg-gray-50">
           <h1 className="text-3xl font-bold mb-6">Поръчки за даване</h1>
 
@@ -308,7 +322,9 @@ const filteredRows = rows
               >
                 <option value="">Всички класове</option>
                 {classes.map((grade) => (
-                  <option key={grade} value={grade}>{grade}</option>
+                  <option key={grade} value={grade}>
+                    {grade}
+                  </option>
                 ))}
               </select>
 
@@ -319,40 +335,42 @@ const filteredRows = rows
               >
                 <option value="">Всички седмици</option>
                 {weeks.map((w) => (
-                  <option key={w.key} value={w.key}>{w.label}</option>
+                  <option key={w.key} value={w.key}>
+                    {w.label}
+                  </option>
                 ))}
               </select>
             </div>
           </div>
           {/* Day filter pills */}
-<div className="flex flex-wrap gap-2 mb-4">
-  <button
-    onClick={() => setSelectedDay("")}
-    className={`px-4 py-1.5 rounded-full border text-sm font-medium transition-colors duration-200 ${
-      selectedDay === ""
-        ? "bg-[#478BAF] text-white border-[#478BAF]"
-        : "border-gray-300 hover:border-[#478BAF] hover:text-[#478BAF]"
-    }`}
-  >
-    Всички дни
-  </button>
-  {DAYS.map((day) => (
-    <button
-      key={day}
-      onClick={() => setSelectedDay(day === selectedDay ? "" : day)}
-      className={`px-4 py-1.5 rounded-full border text-sm font-medium transition-colors duration-200 ${
-        selectedDay === day
-          ? "bg-[#478BAF] text-white border-[#478BAF]"
-          : "border-gray-300 hover:border-[#478BAF] hover:text-[#478BAF]"
-      }`}
-    >
-      {day}
-    </button>
-  ))}
-</div>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <button
+              onClick={() => setSelectedDay("")}
+              className={`px-4 py-1.5 rounded-full border text-sm font-medium transition-colors duration-200 ${
+                selectedDay === ""
+                  ? "bg-[#478BAF] text-white border-[#478BAF]"
+                  : "border-gray-300 hover:border-[#478BAF] hover:text-[#478BAF]"
+              }`}
+            >
+              Всички дни
+            </button>
+            {DAYS.map((day) => (
+              <button
+                key={day}
+                onClick={() => setSelectedDay(day === selectedDay ? "" : day)}
+                className={`px-4 py-1.5 rounded-full border text-sm font-medium transition-colors duration-200 ${
+                  selectedDay === day
+                    ? "bg-[#478BAF] text-white border-[#478BAF]"
+                    : "border-gray-300 hover:border-[#478BAF] hover:text-[#478BAF]"
+                }`}
+              >
+                {day}
+              </button>
+            ))}
+          </div>
 
           {filteredRows.length > 0 && (
-            <div className="flex gap-2 mb-4">
+            <div className="flex gap-2 mb-4 relative z-0">
               <ShinyButton onClick={downloadOrders} href="/" className="p-2">
                 Изтегли поръчките за седмицата
               </ShinyButton>
@@ -398,7 +416,9 @@ const filteredRows = rows
                             <div key={day} className="mb-3">
                               <div className="flex items-center gap-3 flex-wrap">
                                 <strong>{day}:</strong>
-                                <span className="text-xs text-gray-700">Получено:</span>
+                                <span className="text-xs text-gray-700">
+                                  Получено:
+                                </span>
                                 <span
                                   className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
                                     got
@@ -407,9 +427,13 @@ const filteredRows = rows
                                   }`}
                                 >
                                   {got ? (
-                                    <><Check className="w-4 h-4" /> Да</>
+                                    <>
+                                      <Check className="w-4 h-4" /> Да
+                                    </>
                                   ) : (
-                                    <><X className="w-4 h-4" /> Не</>
+                                    <>
+                                      <X className="w-4 h-4" /> Не
+                                    </>
                                   )}
                                 </span>
                                 <button
@@ -435,7 +459,9 @@ const filteredRows = rows
                                 {meals.map((meal, i) => (
                                   <li key={i}>
                                     {meal.name} x {meal.quantity} = €
-                                    {((meal.price ?? 0) * (meal.quantity ?? 1)).toFixed(2)}
+                                    {(
+                                      (meal.price ?? 0) * (meal.quantity ?? 1)
+                                    ).toFixed(2)}
                                   </li>
                                 ))}
                               </ul>
@@ -444,7 +470,8 @@ const filteredRows = rows
                         })}
                       </td>
                       <td className="border p-2 font-bold">
-                        €{new Intl.NumberFormat("de-DE", {
+                        €
+                        {new Intl.NumberFormat("de-DE", {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         }).format(row.total)}
@@ -479,7 +506,9 @@ const filteredRows = rows
                   Page {currentPage} of {totalPages || 1}
                 </span>
                 <button
-                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(p + 1, totalPages))
+                  }
                   disabled={currentPage === totalPages}
                   className="px-4 py-2 border border-[#478BAF] hover:bg-[#478BAF] transition-colors duration-300 hover:text-white rounded-lg disabled:opacity-50"
                 >

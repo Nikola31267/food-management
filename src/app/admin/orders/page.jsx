@@ -96,7 +96,9 @@ const AdminOrdersPage = () => {
       .join("\r\n");
 
     const BOM = "\uFEFF";
-    const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8" });
+    const blob = new Blob([BOM + csvContent], {
+      type: "text/csv;charset=utf-8",
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -184,10 +186,27 @@ const AdminOrdersPage = () => {
           const ch = text[i];
           const next = text[i + 1];
 
-          if (ch === '"' && inQuotes && next === '"') { cell += '"'; i++; continue; }
-          if (ch === '"') { inQuotes = !inQuotes; continue; }
-          if (!inQuotes && ch === ",") { row.push(cell); cell = ""; continue; }
-          if (!inQuotes && ch === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; continue; }
+          if (ch === '"' && inQuotes && next === '"') {
+            cell += '"';
+            i++;
+            continue;
+          }
+          if (ch === '"') {
+            inQuotes = !inQuotes;
+            continue;
+          }
+          if (!inQuotes && ch === ",") {
+            row.push(cell);
+            cell = "";
+            continue;
+          }
+          if (!inQuotes && ch === "\n") {
+            row.push(cell);
+            rows.push(row);
+            row = [];
+            cell = "";
+            continue;
+          }
           cell += ch;
         }
 
@@ -211,11 +230,21 @@ const AdminOrdersPage = () => {
       for (const r of rows) {
         const p = r.findIndex((c) => normalizeMealName(c) === "цена");
         const q = r.findIndex((c) => normalizeMealName(c) === "брой");
-        if (p !== -1 && q !== -1) { priceCol = p; qtyCol = q; break; }
+        if (p !== -1 && q !== -1) {
+          priceCol = p;
+          qtyCol = q;
+          break;
+        }
       }
 
-      if (priceCol === -1) { toast.error('Не намерих колона "цена" в CSV файла.'); return; }
-      if (qtyCol === -1) { toast.error('Не намерих колона "брой" в CSV файла.'); return; }
+      if (priceCol === -1) {
+        toast.error('Не намерих колона "цена" в CSV файла.');
+        return;
+      }
+      if (qtyCol === -1) {
+        toast.error('Не намерих колона "брой" в CSV файла.');
+        return;
+      }
 
       const totalCol = qtyCol + 1;
       const mealNameCol = Math.max(priceCol - 2, 0);
@@ -230,7 +259,11 @@ const AdminOrdersPage = () => {
         const nameCell = normalizeMealName(r?.[mealNameCol]);
         const qtyCell = String(r?.[qtyCol] ?? "").trim();
         const totalCell = String(r?.[totalCol] ?? "").trim();
-        return (!nameCell && totalCell.includes("€") && (qtyCell === "" || /^\d/.test(qtyCell)));
+        return (
+          !nameCell &&
+          totalCell.includes("€") &&
+          (qtyCell === "" || /^\d/.test(qtyCell))
+        );
       };
 
       for (let i = 0; i < rows.length; i++) {
@@ -239,8 +272,16 @@ const AdminOrdersPage = () => {
         const norm = normalizeMealName(cellText);
 
         const detectedDay = detectDayKey(cellText);
-        if (detectedDay) { currentDay = detectedDay; daySum = 0; dayQtySum = 0; continue; }
-        if (norm && norm.includes("седмично меню")) { currentDay = null; continue; }
+        if (detectedDay) {
+          currentDay = detectedDay;
+          daySum = 0;
+          dayQtySum = 0;
+          continue;
+        }
+        if (norm && norm.includes("седмично меню")) {
+          currentDay = null;
+          continue;
+        }
 
         if (currentDay) {
           if (isLikelySubtotalRow(r)) {
@@ -384,8 +425,10 @@ const AdminOrdersPage = () => {
 
     const matchesPaid = (() => {
       if (!selectedPaid) return true;
-      if (selectedPaid === "paid") return u.orders.every((o) => o.paid === true);
-      if (selectedPaid === "unpaid") return u.orders.some((o) => o.paid === false);
+      if (selectedPaid === "paid")
+        return u.orders.every((o) => o.paid === true);
+      if (selectedPaid === "unpaid")
+        return u.orders.some((o) => o.paid === false);
       return true;
     })();
 
@@ -411,7 +454,10 @@ const AdminOrdersPage = () => {
     <div className="min-h-screen">
       <SidebarNav user={user} />
 
-      <main className="lg:pl-64">
+      <main
+        style={{ paddingLeft: "var(--sidebar-width, 16rem)" }}
+        className="transition-all duration-300"
+      >
         <div className="p-8 min-h-screen bg-gray-50">
           <h1 className="text-3xl font-bold mb-6">Поръчки</h1>
 
@@ -431,7 +477,9 @@ const AdminOrdersPage = () => {
               >
                 <option value="">Всички класове</option>
                 {classes.map((grade) => (
-                  <option key={grade} value={grade}>{grade}</option>
+                  <option key={grade} value={grade}>
+                    {grade}
+                  </option>
                 ))}
               </select>
               <select
@@ -457,13 +505,25 @@ const AdminOrdersPage = () => {
 
           {ordersData.length !== 0 && (
             <div className="flex gap-2">
-              <ShinyButton onClick={downloadFoodByClassCSV} href="/" className="p-2 mb-2 mt-2">
+              <ShinyButton
+                onClick={downloadFoodByClassCSV}
+                href="/"
+                className="p-2 mb-2 mt-2"
+              >
                 Изтегли поръчките (по клас)
               </ShinyButton>
-              <ShinyButton onClick={downloadMenuWithCountsCSV} href="/" className="p-2 mb-2 mt-2">
+              <ShinyButton
+                onClick={downloadMenuWithCountsCSV}
+                href="/"
+                className="p-2 mb-2 mt-2"
+              >
                 Изтегли фактура за Бешамел
               </ShinyButton>
-              <ShinyButton onClick={downloadOrders} href="/" className="p-2 mb-2 mt-2">
+              <ShinyButton
+                onClick={downloadOrders}
+                href="/"
+                className="p-2 mb-2 mt-2"
+              >
                 Изтегли поръчките за седмицата
               </ShinyButton>
             </div>
@@ -495,7 +555,9 @@ const AdminOrdersPage = () => {
                         <td className="border p-2">
                           {week.days.map((day) => (
                             <div key={day.day} className="mb-3">
-                              <strong className="text-sm font-semibold capitalize">{day.day}</strong>
+                              <strong className="text-sm font-semibold capitalize">
+                                {day.day}
+                              </strong>
                               <ul className="ml-4 mt-1">
                                 {day.meals.map((meal) => (
                                   <li key={meal.mealName}>
@@ -545,7 +607,11 @@ const AdminOrdersPage = () => {
                             disabled={submiting}
                             className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors duration-300 disabled:opacity-50"
                           >
-                            {submiting ? <Loader2 className="animate-spin" /> : <Trash />}
+                            {submiting ? (
+                              <Loader2 className="animate-spin" />
+                            ) : (
+                              <Trash />
+                            )}
                           </button>
                         </td>
                       </tr>
@@ -566,7 +632,9 @@ const AdminOrdersPage = () => {
                   Page {currentPage} of {totalPages || 1}
                 </span>
                 <button
-                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(p + 1, totalPages))
+                  }
                   disabled={currentPage === totalPages}
                   className="px-4 py-2 border border-[#478BAF] hover:bg-[#478BAF] transition-colors duration-300 hover:text-white rounded-lg disabled:opacity-50"
                 >

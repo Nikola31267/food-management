@@ -39,7 +39,10 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       <SidebarNav user={user} />
-      <main className="lg:pl-64">
+      <main
+        style={{ paddingLeft: "var(--sidebar-width, 16rem)" }}
+        className="transition-all duration-300"
+      >
         <div className="px-4 py-6 sm:px-6 lg:px-8">
           <DashboardHeader />
           <div className="mt-6">

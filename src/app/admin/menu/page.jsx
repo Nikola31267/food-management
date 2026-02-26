@@ -179,7 +179,6 @@ const AdminPage = () => {
     try {
       await axios.post("/api/menu", payload);
 
-
       toast.success("Менюто е създадено!");
       await fetchMenu();
 
@@ -269,9 +268,9 @@ const AdminPage = () => {
     );
 
     const response = await axios.delete(
-  `/api/menu/${weeklyMenu._id}?download=${downloadOrders}`,
-  { responseType: downloadOrders ? "blob" : "json" },
-);
+      `/api/menu/${weeklyMenu._id}?download=${downloadOrders}`,
+      { responseType: downloadOrders ? "blob" : "json" },
+    );
 
     if (downloadOrders) {
       const startDate = formatDate(weeklyMenu.weekStart);
@@ -298,7 +297,10 @@ const AdminPage = () => {
     <div className="min-h-screen">
       <SidebarNav user={user} />
 
-      <main className="lg:pl-64">
+      <main
+        style={{ paddingLeft: "var(--sidebar-width, 16rem)" }}
+        className="transition-all duration-300"
+      >
         <div className="mx-auto max-w-5xl p-6 space-y-12">
           <div className="rounded-xl border bg-white p-6 space-y-6 shadow-sm">
             <div className="flex items-center justify-between gap-4">

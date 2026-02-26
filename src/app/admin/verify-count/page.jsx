@@ -182,7 +182,7 @@ export default function DailyOrdersPage() {
     <div className="min-h-screen">
       <SidebarNav user={user} />
 
-      <main className="lg:pl-64">
+    <main style={{ paddingLeft: "var(--sidebar-width, 16rem)" }} className="transition-all duration-300">
         <div className="mx-auto max-w-5xl px-4 py-10">
           <div className="mb-6">
             <label className="block text-sm font-medium text-slate-700 mb-2">

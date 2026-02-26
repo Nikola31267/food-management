@@ -23,11 +23,11 @@ export default function MyOldOrders() {
       setError("");
 
       try {
-       const userRes = await axios.get("/api/auth/user");
+        const userRes = await axios.get("/api/auth/user");
 
         setUser(userRes.data);
 
-       const res = await axios.get("/api/old-orders");
+        const res = await axios.get("/api/old-orders");
 
         const orders = res.data?.oldOrders || [];
         setOldOrders(orders);
@@ -51,9 +51,9 @@ export default function MyOldOrders() {
   }, []);
 
   const handleLogout = async () => {
-  await axios.post("/api/auth/sign-out");
-  router.push("/sign-in");
-};
+    await axios.post("/api/auth/sign-out");
+    router.push("/sign-in");
+  };
 
   const money = (n) =>
     new Intl.NumberFormat("de-DE", {
