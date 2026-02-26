@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { Check, X, Loader2, Trash } from "lucide-react";
 import Loader from "@/components/layout/Loader";
@@ -67,7 +67,22 @@ export default function ArchivedOrdersPage() {
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedWeek, setSelectedWeek] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedDay, setSelectedDay] = useState("");
   const ordersPerPage = 5;
+
+  const classes = useMemo(() => [...new Set(rows.map((r) => r.grade))], [rows]);
+
+const weeks = useMemo(() => [
+  ...new Map(
+    rows
+      .map((r) => ({
+        key: weekKey(r.weekStart, r.weekEnd),
+        label: `${formatDate(r.weekStart)} → ${formatDate(r.weekEnd)}`,
+      }))
+      .sort((a, b) => new Date(b.key.split("__")[0]) - new Date(a.key.split("__")[0]))
+      .map((w) => [w.key, w]),
+  ).values(),
+], [rows]);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -132,9 +147,32 @@ export default function ArchivedOrdersPage() {
     fetchArchivedOrders();
   }, []);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, selectedClass, selectedWeek]);
+ useEffect(() => {
+  setCurrentPage(1);
+}, [searchTerm, selectedClass, selectedWeek, selectedDay]);;
+
+  // Auto-select current week and day
+useEffect(() => {
+  if (rows.length === 0) return;
+
+  const today = new Date();
+  const todayTime = today.getTime();
+
+  // Auto-select week
+  const matchingWeek = weeks.find((w) => {
+    const [startStr, endStr] = w.key.split("__");
+    const start = new Date(startStr).getTime();
+    const end = new Date(endStr).getTime() + 86400000; // inclusive
+    return todayTime >= start && todayTime <= end;
+  });
+  if (matchingWeek && !selectedWeek) setSelectedWeek(matchingWeek.key);
+
+  // Auto-select day (0=Sun,1=Mon,...,5=Fri,6=Sat)
+  const dayIndex = today.getDay(); // 1=Mon ... 5=Fri
+  if (dayIndex >= 1 && dayIndex <= 5 && !selectedDay) {
+    setSelectedDay(DAYS[dayIndex - 1]); // DAYS[0]=Понеделник ... DAYS[4]=Петък
+  }
+}, [rows]);
 
   const handleToggleOrderGot = async (row, day) => {
     const dayData = row.dayMeals[day];
@@ -229,33 +267,17 @@ export default function ArchivedOrdersPage() {
     );
   }
 
-  const classes = [...new Set(rows.map((r) => r.grade))];
+ ;
 
-  const weeks = [
-    ...new Map(
-      rows
-        .map((r) => ({
-          key: weekKey(r.weekStart, r.weekEnd),
-          label: `${formatDate(r.weekStart)} → ${formatDate(r.weekEnd)}`,
-        }))
-        .sort(
-          (a, b) =>
-            new Date(b.key.split("__")[0]) - new Date(a.key.split("__")[0]),
-        )
-        .map((w) => [w.key, w]),
-    ).values(),
-  ];
-
-  const filteredRows = rows.filter((r) => {
-    const matchesName = (r.fullName || "")
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+const filteredRows = rows
+  .filter((r) => {
+    const matchesName = (r.fullName || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesClass = selectedClass ? r.grade === selectedClass : true;
-    const matchesWeek = selectedWeek
-      ? weekKey(r.weekStart, r.weekEnd) === selectedWeek
-      : true;
-    return matchesName && matchesClass && matchesWeek;
-  });
+    const matchesWeek = selectedWeek ? weekKey(r.weekStart, r.weekEnd) === selectedWeek : true;
+    // If a day is selected, only keep rows that have meals on that day
+    const matchesDay = selectedDay ? r.dayMeals[selectedDay]?.meals.length > 0 : true;
+    return matchesName && matchesClass && matchesWeek && matchesDay;
+  });;
 
   const totalPages = Math.ceil(filteredRows.length / ordersPerPage);
   const paginatedRows = filteredRows.slice(
@@ -302,6 +324,32 @@ export default function ArchivedOrdersPage() {
               </select>
             </div>
           </div>
+          {/* Day filter pills */}
+<div className="flex flex-wrap gap-2 mb-4">
+  <button
+    onClick={() => setSelectedDay("")}
+    className={`px-4 py-1.5 rounded-full border text-sm font-medium transition-colors duration-200 ${
+      selectedDay === ""
+        ? "bg-[#478BAF] text-white border-[#478BAF]"
+        : "border-gray-300 hover:border-[#478BAF] hover:text-[#478BAF]"
+    }`}
+  >
+    Всички дни
+  </button>
+  {DAYS.map((day) => (
+    <button
+      key={day}
+      onClick={() => setSelectedDay(day === selectedDay ? "" : day)}
+      className={`px-4 py-1.5 rounded-full border text-sm font-medium transition-colors duration-200 ${
+        selectedDay === day
+          ? "bg-[#478BAF] text-white border-[#478BAF]"
+          : "border-gray-300 hover:border-[#478BAF] hover:text-[#478BAF]"
+      }`}
+    >
+      {day}
+    </button>
+  ))}
+</div>
 
           {filteredRows.length > 0 && (
             <div className="flex gap-2 mb-4">
@@ -336,7 +384,7 @@ export default function ArchivedOrdersPage() {
                         {formatDate(row.weekStart)} → {formatDate(row.weekEnd)}
                       </td>
                       <td className="border p-2">
-                        {DAYS.map((day) => {
+                        {(selectedDay ? [selectedDay] : DAYS).map((day) => {
                           const dayData = row.dayMeals[day];
                           const meals = dayData.meals;
                           const got = dayData.orderGot;
