@@ -12,27 +12,16 @@ export default function Home() {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (localStorage.getItem("data-auth-eduiteh-school-food-management")) {
-        try {
-          const response = await axios.get("/api/auth/user", {
-            headers: {
-              "x-auth-token": localStorage.getItem("data-auth-eduiteh-school-food-management"),
-            },
-          });
-          setUser(response.data);
-          if (response.data) {
-            router.push("/dashboard");
-          }
-        } catch (error) {
-          setError("Error fetching user profile");
-          console.error(error);
-        } finally {
-          setLoading(false);
+      try {
+        const response = await axios.get("/api/auth/user");
+        setUser(response.data);
+        if (response.data) {
+          router.push("/dashboard");
         }
-      } else {
-        setLoading(false);
-        setUser(null);
+      } catch (error) {
         router.push("/sign-in");
+      } finally {
+        setLoading(false);
       }
     };
 
