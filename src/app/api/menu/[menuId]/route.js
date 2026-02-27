@@ -16,7 +16,7 @@ export async function DELETE(req, { params }) {
   await connectDB();
 
   try {
-    const decoded = await verifyToken(req); // ← await added
+    const decoded = await verifyToken(req);
     const admin = await User.findById(decoded.id);
 
     if (!admin || admin.role !== "admin") {
@@ -35,6 +35,11 @@ export async function DELETE(req, { params }) {
       { "orders.menuId": menuId },
       { email: 1, fullName: 1, grade: 1, orders: 1 },
     ).lean();
+
+    // Check if deadline has passed
+    const now = new Date();
+    const deadline = menu?.orderDeadline ? new Date(menu.orderDeadline) : null;
+    const deadlineOver = deadline ? now > deadline : true;
 
     let csv;
     if (download) {
@@ -85,43 +90,6 @@ export async function DELETE(req, { params }) {
 
     const menuObjectId = new mongoose.Types.ObjectId(menuId);
 
-    const bulkOps = usersWithOrders.map((u) => {
-      const matchingOrders = (u.orders || []).filter(
-        (o) => o.menuId.toString() === menuId,
-      );
-
-      const total = matchingOrders.reduce(
-        (sum, o) => sum + (o.totalPrice || 0),
-        0,
-      );
-
-      const archiveDoc = {
-        menuId: menuObjectId,
-        weekStart: menu.weekStart,
-        weekEnd: menu.weekEnd,
-        userEmail: u.email,
-        userFullName: u.fullName,
-        userGrade: u.grade,
-        orders: matchingOrders,
-        total,
-        archivedAt: new Date(),
-      };
-
-      return {
-        updateOne: {
-          filter: { _id: u._id },
-          update: {
-            $push: { archivedOrders: archiveDoc },
-            $pull: { orders: { menuId: menuObjectId } },
-          },
-        },
-      };
-    });
-
-    if (bulkOps.length) {
-      await User.bulkWrite(bulkOps, { ordered: false });
-    }
-
     const menuDate =
       menu.weekStart && menu.weekEnd
         ? `${new Date(menu.weekStart).toISOString().slice(0, 10)} - ${new Date(menu.weekEnd).toISOString().slice(0, 10)}`
@@ -129,30 +97,84 @@ export async function DELETE(req, { params }) {
           ? new Date(menu.weekStart).toISOString().slice(0, 10)
           : String(menuId);
 
-    const unpaidDocs = [];
+    if (deadlineOver) {
+      // Archive orders and save unpaid only if deadline has passed
+      const bulkOps = usersWithOrders.map((u) => {
+        const matchingOrders = (u.orders || []).filter(
+          (o) => o.menuId.toString() === menuId,
+        );
 
-    usersWithOrders.forEach((u) => {
-      const matchingOrders = (u.orders || []).filter(
-        (o) => o.menuId.toString() === menuId,
-      );
+        const total = matchingOrders.reduce(
+          (sum, o) => sum + (o.totalPrice || 0),
+          0,
+        );
 
-      const unpaidTotal = matchingOrders
-        .filter((o) => !isOrderPaid(o))
-        .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+        const archiveDoc = {
+          menuId: menuObjectId,
+          weekStart: menu.weekStart,
+          weekEnd: menu.weekEnd,
+          userEmail: u.email,
+          userFullName: u.fullName,
+          userGrade: u.grade,
+          orders: matchingOrders,
+          total,
+          archivedAt: new Date(),
+        };
 
-      if (unpaidTotal > 0) {
-        unpaidDocs.push({
-          name: u.fullName || "—",
-          grade: u.grade || "—",
-          total: unpaidTotal,
-          week: menuDate,
-          email: u.email || "—",
-        });
+        return {
+          updateOne: {
+            filter: { _id: u._id },
+            update: {
+              $push: { archivedOrders: archiveDoc },
+              $pull: { orders: { menuId: menuObjectId } },
+            },
+          },
+        };
+      });
+
+      if (bulkOps.length) {
+        await User.bulkWrite(bulkOps, { ordered: false });
       }
-    });
 
-    if (unpaidDocs.length) {
-      await Unpaid.insertMany(unpaidDocs, { ordered: false });
+      const unpaidDocs = [];
+
+      usersWithOrders.forEach((u) => {
+        const matchingOrders = (u.orders || []).filter(
+          (o) => o.menuId.toString() === menuId,
+        );
+
+        const unpaidTotal = matchingOrders
+          .filter((o) => !isOrderPaid(o))
+          .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+
+        if (unpaidTotal > 0) {
+          unpaidDocs.push({
+            name: u.fullName || "—",
+            grade: u.grade || "—",
+            total: unpaidTotal,
+            week: menuDate,
+            email: u.email || "—",
+          });
+        }
+      });
+
+      if (unpaidDocs.length) {
+        await Unpaid.insertMany(unpaidDocs, { ordered: false });
+      }
+    } else {
+      // Deadline not over — just remove orders without archiving or saving unpaid
+      const bulkOps = usersWithOrders.map((u) => ({
+        updateOne: {
+          filter: { _id: u._id },
+          update: {
+            $pull: { orders: { menuId: menuObjectId } },
+          },
+        },
+      }));
+
+      if (bulkOps.length) {
+        await User.bulkWrite(bulkOps, { ordered: false });
+      }
     }
 
     await WeeklyMenu.findByIdAndDelete(menuId);
@@ -168,9 +190,9 @@ export async function DELETE(req, { params }) {
 
     return NextResponse.json({
       message: "Weekly menu deleted; orders archived.",
-      archivedCount: bulkOps.length,
-      unpaidCount: unpaidDocs.length,
-      unpaidSaved: unpaidDocs.length,
+      archivedCount: deadlineOver ? usersWithOrders.length : 0,
+      unpaidCount: deadlineOver ? usersWithOrders.length : 0,
+      deadlineOver,
       menuDate,
     });
   } catch (err) {
@@ -227,7 +249,8 @@ export async function PUT(req, { params }) {
     };
 
     if (typeof body.menuFile === "string") updateDoc.menuFile = body.menuFile;
-    if (typeof body.menuFileName === "string") updateDoc.menuFileName = body.menuFileName;
+    if (typeof body.menuFileName === "string")
+      updateDoc.menuFileName = body.menuFileName;
 
     const updated = await WeeklyMenu.findByIdAndUpdate(menuId, updateDoc, {
       new: true,

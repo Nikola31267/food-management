@@ -47,47 +47,57 @@ export async function DELETE(req, { params }) {
 
     const menuDate =
       menu?.weekStart && menu?.weekEnd
-        ? `${new Date(menu.weekStart).toISOString().slice(0, 10)} - ${new Date(
-            menu.weekEnd,
-          )
-            .toISOString()
-            .slice(0, 10)}`
+        ? `${new Date(menu.weekStart).toISOString().slice(0, 10)} - ${new Date(menu.weekEnd).toISOString().slice(0, 10)}`
         : menu?.weekStart
           ? new Date(menu.weekStart).toISOString().slice(0, 10)
           : String(effectiveMenuId);
 
-    const unpaidTotal = !isOrderPaid(order) ? order.totalPrice || 0 : 0;
+    // Check if the menu deadline has passed
+    const now = new Date();
+    const deadline = menu?.orderDeadline ? new Date(menu.orderDeadline) : null;
+    const deadlineOver = deadline ? now > deadline : true;
 
-    if (unpaidTotal > 0) {
-      await Unpaid.create({
-        name: user.fullName || "—",
-        grade: user.grade || "—",
-        email: user.email || "—",
-        total: unpaidTotal,
-        week: menuDate,
+    let unpaidSaved = false;
+    let unpaidTotal = 0;
+
+    if (deadlineOver) {
+      // Deadline has passed — save to unpaid and archived as usual
+      unpaidTotal = !isOrderPaid(order) ? order.totalPrice || 0 : 0;
+
+      if (unpaidTotal > 0) {
+        await Unpaid.create({
+          name: user.fullName || "—",
+          grade: user.grade || "—",
+          email: user.email || "—",
+          total: unpaidTotal,
+          week: menuDate,
+        });
+        unpaidSaved = true;
+      }
+
+      user.archivedOrders.push({
+        menuId: effectiveMenuId,
+        weekStart: menu?.weekStart,
+        weekEnd: menu?.weekEnd,
+        userEmail: user.email,
+        userFullName: user.fullName,
+        userGrade: user.grade,
+        orders: [order.toObject()],
+        total: order.totalPrice || 0,
+        archivedAt: new Date(),
       });
     }
-
-    user.archivedOrders.push({
-      menuId: effectiveMenuId,
-      weekStart: menu?.weekStart,
-      weekEnd: menu?.weekEnd,
-      userEmail: user.email,
-      userFullName: user.fullName,
-      userGrade: user.grade,
-      orders: [order.toObject()],
-      total: order.totalPrice || 0,
-      archivedAt: new Date(),
-    });
+    // If deadline is NOT over, just delete the order without archiving or saving to unpaid
 
     order.deleteOne();
     await user.save();
 
     return NextResponse.json({
       message: "Order deleted successfully",
-      unpaidSaved: unpaidTotal > 0,
+      unpaidSaved,
       unpaidTotal,
       menuDate,
+      deadlineOver,
     });
   } catch (err) {
     console.error("Admin delete order error:", err);

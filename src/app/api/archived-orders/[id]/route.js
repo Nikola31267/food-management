@@ -8,7 +8,7 @@ export async function DELETE(req, { params }) {
     requireAdmin(req);
     await connectDB();
 
-    const { id } = params;
+    const { id } = await params;
 
     const result = await User.updateOne(
       { "archivedOrders._id": id },
