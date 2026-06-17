@@ -87,8 +87,8 @@ const AdminPage = () => {
     }
 
     try {
-      // ✅ 1) Parse week from filename and auto-fill
       const weekInfo = parseWeekFromMenuFilename(file.name);
+
       if (weekInfo) {
         setForm((prev) => ({
           ...prev,
@@ -128,7 +128,6 @@ const AdminPage = () => {
 
       setMenuCsvText(csvText);
 
-      // ✅ 2) Force CSV filename to be your normalized Bulgarian format
       if (weekInfo?.normalizedBaseName) {
         setMenuCsvName(`${weekInfo.normalizedBaseName}.csv`);
       } else {
@@ -148,6 +147,7 @@ const AdminPage = () => {
       toast.error("Please set an order deadline");
       return;
     }
+
     if (!hasAnyMeals) {
       toast.error("Добавете поне едно ястие");
       return;
@@ -170,12 +170,12 @@ const AdminPage = () => {
                 : Number(String(m.price).replace(",", ".")),
           })),
       })),
-
       menuFile: menuCsvText || "",
       menuFileName: menuCsvName || "",
     };
 
     setSubmiting(true);
+
     try {
       await axios.post("/api/menu", payload);
 
@@ -201,6 +201,7 @@ const AdminPage = () => {
 
   const startEditing = () => {
     const copy = JSON.parse(JSON.stringify(weeklyMenu));
+
     copy.weekStart = formatDateForInput(copy.weekStart);
     copy.weekEnd = formatDateForInput(copy.weekEnd);
     copy.orderDeadline = formatDateTimeForInput(copy.orderDeadline);
@@ -258,55 +259,63 @@ const AdminPage = () => {
       setSubmiting(false);
     }
   };
+
   const deleteMenu = async () => {
     const firstConfirm = window.confirm("Изтрийте цялото седмично меню?");
     if (!firstConfirm) return;
+
     setSubmiting(true);
 
-    const downloadOrders = window.confirm(
-      "Искате ли да свалите всички стари поръчки преди изтриване?",
-    );
+    try {
+      const downloadOrders = window.confirm(
+        "Искате ли да свалите всички стари поръчки преди изтриване?",
+      );
 
-    const response = await axios.delete(
-      `/api/menu/${weeklyMenu._id}?download=${downloadOrders}`,
-      { responseType: downloadOrders ? "blob" : "json" },
-    );
+      const response = await axios.delete(
+        `/api/menu/${weeklyMenu._id}?download=${downloadOrders}`,
+        { responseType: downloadOrders ? "blob" : "json" },
+      );
 
-    if (downloadOrders) {
-      const startDate = formatDate(weeklyMenu.weekStart);
-      const endDate = formatDate(weeklyMenu.weekEnd);
+      if (downloadOrders) {
+        const startDate = formatDate(weeklyMenu.weekStart);
+        const endDate = formatDate(weeklyMenu.weekEnd);
 
-      const blob = new Blob([response.data], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
+        const blob = new Blob([response.data], { type: "text/csv" });
+        const url = window.URL.createObjectURL(blob);
 
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `orders-${startDate}_to_${endDate}.csv`;
-      a.click();
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `orders-${startDate}_to_${endDate}.csv`;
+        a.click();
 
-      window.URL.revokeObjectURL(url);
+        window.URL.revokeObjectURL(url);
+      }
+
+      setWeeklyMenu(null);
+      setIsEditing(false);
+    } catch (e) {
+      console.error(e);
+      toast.error(e?.response?.data?.message || "Failed to delete menu");
+    } finally {
+      setSubmiting(false);
     }
-
-    setWeeklyMenu(null);
-    setIsEditing(false);
-    setSubmiting(false);
   };
+
   if (loading) return <Loader />;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <SidebarNav user={user} />
 
-      <main
-        style={{ paddingLeft: "var(--sidebar-width, 16rem)" }}
-        className="transition-all duration-300"
-      >
-        <div className="mx-auto max-w-5xl p-6 space-y-12">
-          <div className="rounded-xl border bg-white p-6 space-y-6 shadow-sm">
-            <div className="flex items-center justify-between gap-4">
-              <h2 className="text-xl font-semibold">Създай седмично меню</h2>
+      <main className="min-h-screen transition-all duration-300 md:pl-[var(--sidebar-width,16rem)]">
+        <div className="mx-auto max-w-5xl space-y-8 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          <div className="space-y-6 rounded-xl border bg-white p-4 shadow-sm sm:p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-lg font-semibold sm:text-xl">
+                Създай седмично меню
+              </h2>
 
-              <label className="inline-flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm hover:border-[#478BAF] transition-colors duration-300 hover:bg-gray-50 cursor-pointer">
+              <label className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm transition-colors duration-300 hover:border-[#478BAF] hover:bg-gray-50 sm:w-auto">
                 <span className="font-medium">Upload .xlsx</span>
                 <input
                   type="file"
@@ -320,15 +329,10 @@ const AdminPage = () => {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1">
                 <p className="font-semibold">От:</p>
-                <div
-                  className="w-full rounded-lg border border-gray-300
-                 focus-within:border-[#478BAF]
-                 focus-within:ring-2 focus-within:ring-[#478BAF]"
-                >
+                <div className="w-full rounded-lg border border-gray-300 focus-within:border-[#478BAF] focus-within:ring-2 focus-within:ring-[#478BAF]">
                   <input
                     type="date"
-                    className="w-full rounded-lg px-3 py-2
-                   focus:outline-none border-none bg-transparent"
+                    className="w-full rounded-lg border-none bg-transparent px-3 py-2 focus:outline-none"
                     value={form.weekStart}
                     onChange={(e) =>
                       setForm({ ...form, weekStart: e.target.value })
@@ -339,15 +343,10 @@ const AdminPage = () => {
 
               <div className="space-y-1">
                 <p className="font-semibold">До:</p>
-                <div
-                  className="w-full rounded-lg border border-gray-300
-                 focus-within:border-[#478BAF]
-                 focus-within:ring-2 focus-within:ring-[#478BAF]"
-                >
+                <div className="w-full rounded-lg border border-gray-300 focus-within:border-[#478BAF] focus-within:ring-2 focus-within:ring-[#478BAF]">
                   <input
                     type="date"
-                    className="w-full rounded-lg px-3 py-2
-                   focus:outline-none border-none bg-transparent"
+                    className="w-full rounded-lg border-none bg-transparent px-3 py-2 focus:outline-none"
                     value={form.weekEnd}
                     onChange={(e) =>
                       setForm({ ...form, weekEnd: e.target.value })
@@ -359,15 +358,10 @@ const AdminPage = () => {
 
             <div className="space-y-1">
               <p className="font-semibold">Последен ден за поръчка:</p>
-              <div
-                className="w-full rounded-lg border border-gray-300
-               focus-within:border-[#478BAF]
-               focus-within:ring-2 focus-within:ring-[#478BAF]"
-              >
+              <div className="w-full rounded-lg border border-gray-300 focus-within:border-[#478BAF] focus-within:ring-2 focus-within:ring-[#478BAF]">
                 <input
                   type="datetime-local"
-                  className="w-full rounded-lg px-3 py-2
-                 focus:outline-none border-none bg-transparent"
+                  className="w-full rounded-lg border-none bg-transparent px-3 py-2 focus:outline-none"
                   value={form.orderDeadline}
                   onChange={(e) =>
                     setForm({ ...form, orderDeadline: e.target.value })
@@ -378,9 +372,10 @@ const AdminPage = () => {
 
             <div className="space-y-4">
               {form.days.map((day, dayIndex) => (
-                <div key={day.day} className="rounded-xl border p-4">
-                  <div className="flex items-center justify-between">
+                <div key={day.day} className="rounded-xl border p-3 sm:p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <h3 className="font-bold">{day.day}</h3>
+
                     <Button
                       variant="outline"
                       onClick={() =>
@@ -389,20 +384,20 @@ const AdminPage = () => {
                           days: addMeal(prev.days, dayIndex),
                         }))
                       }
-                      className="hover:border-[#478BAF] transition-colors duration-300 hover:bg-gray-50"
+                      className="w-full transition-colors duration-300 hover:border-[#478BAF] hover:bg-gray-50 sm:w-auto"
                     >
                       + Добави ястие
                     </Button>
                   </div>
 
-                  <div className="mt-3 space-y-2">
+                  <div className="mt-3 space-y-3">
                     {day.meals.map((meal) => (
                       <div
                         key={meal.id}
                         className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_180px_140px_auto] sm:items-center"
                       >
                         <input
-                          className="w-full rounded-lg border px-3 py-2 focus:outline-none focus:border-[#478BAF] focus:ring-2 focus:ring-[#478BAF]"
+                          className="w-full rounded-lg border px-3 py-2 focus:border-[#478BAF] focus:outline-none focus:ring-2 focus:ring-[#478BAF]"
                           placeholder="Име на ястието"
                           value={meal.name}
                           onChange={(e) =>
@@ -420,7 +415,7 @@ const AdminPage = () => {
                         />
 
                         <input
-                          className="w-full rounded-lg border px-3 py-2 focus:outline-none focus:border-[#478BAF] focus:ring-2 focus:ring-[#478BAF]"
+                          className="w-full rounded-lg border px-3 py-2 focus:border-[#478BAF] focus:outline-none focus:ring-2 focus:ring-[#478BAF]"
                           placeholder="Грамаж/Бройка"
                           value={meal.weight}
                           onChange={(e) =>
@@ -440,7 +435,7 @@ const AdminPage = () => {
                         <div className="flex items-center gap-2">
                           <input
                             inputMode="decimal"
-                            className="w-full rounded-lg border px-3 py-2 focus:outline-none focus:border-[#478BAF] focus:ring-2 focus:ring-[#478BAF]"
+                            className="w-full rounded-lg border px-3 py-2 focus:border-[#478BAF] focus:outline-none focus:ring-2 focus:ring-[#478BAF]"
                             placeholder="Цена"
                             value={meal.price}
                             onChange={(e) =>
@@ -456,7 +451,10 @@ const AdminPage = () => {
                               }))
                             }
                           />
-                          <span className="text-sm text-gray-600">€</span>
+
+                          <span className="shrink-0 text-sm text-gray-600">
+                            €
+                          </span>
                         </div>
 
                         <Button
@@ -467,7 +465,7 @@ const AdminPage = () => {
                               days: removeMeal(prev.days, dayIndex, meal.id),
                             }))
                           }
-                          className="justify-self-start sm:justify-self-end hover:border-[#478BAF] transition-colors duration-300 hover:bg-gray-50"
+                          className="w-full transition-colors duration-300 hover:border-[#478BAF] hover:bg-gray-50 sm:w-auto"
                         >
                           −
                         </Button>
@@ -481,7 +479,7 @@ const AdminPage = () => {
             <ShinyButton
               href="#"
               disabled={submiting}
-              className="p-2"
+              className="w-full p-2 sm:w-auto"
               onClick={handleSubmit}
             >
               {submiting ? (
@@ -492,25 +490,29 @@ const AdminPage = () => {
             </ShinyButton>
           </div>
 
-          {/* CURRENT MENU */}
           {weeklyMenu && (
-            <div className="rounded-xl border bg-white p-6 space-y-4 shadow-sm">
-              <div className="flex items-center justify-between gap-4">
-                <h2 className="text-xl font-semibold">Сегашно меню</h2>
-                <div className="flex gap-2">
+            <div className="space-y-4 rounded-xl border bg-white p-4 shadow-sm sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="text-lg font-semibold sm:text-xl">
+                  Сегашно меню
+                </h2>
+
+                <div className="flex flex-col gap-2 sm:flex-row">
                   {!isEditing && (
                     <Button
                       variant="outline"
-                      className="hover:border-[#478BAF] hover:bg-gray-50 transition-colors duration-300"
+                      className="w-full transition-colors duration-300 hover:border-[#478BAF] hover:bg-gray-50 sm:w-auto"
                       onClick={startEditing}
                     >
                       ✏️ Редактирай
                     </Button>
                   )}
+
                   <Button
                     variant="destructive"
                     disabled={submiting}
                     onClick={deleteMenu}
+                    className="w-full sm:w-auto"
                   >
                     {submiting ? (
                       <Loader2 className="animate-spin" />
@@ -526,25 +528,32 @@ const AdminPage = () => {
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <input
                       type="date"
-                      className="w-full rounded-lg border px-3 py-2 focus:outline-none focus:border-[#478BAF] focus:ring-2 focus:ring-[#478BAF]"
+                      className="w-full rounded-lg border px-3 py-2 focus:border-[#478BAF] focus:outline-none focus:ring-2 focus:ring-[#478BAF]"
                       value={editForm.weekStart}
                       onChange={(e) =>
-                        setEditForm({ ...editForm, weekStart: e.target.value })
+                        setEditForm({
+                          ...editForm,
+                          weekStart: e.target.value,
+                        })
                       }
                     />
+
                     <input
                       type="date"
-                      className="w-full rounded-lg border px-3 py-2 focus:outline-none focus:border-[#478BAF] focus:ring-2 focus:ring-[#478BAF]"
+                      className="w-full rounded-lg border px-3 py-2 focus:border-[#478BAF] focus:outline-none focus:ring-2 focus:ring-[#478BAF]"
                       value={editForm.weekEnd}
                       onChange={(e) =>
-                        setEditForm({ ...editForm, weekEnd: e.target.value })
+                        setEditForm({
+                          ...editForm,
+                          weekEnd: e.target.value,
+                        })
                       }
                     />
                   </div>
 
                   <input
                     type="datetime-local"
-                    className="w-full rounded-lg border px-3 py-2 focus:outline-none focus:border-[#478BAF] focus:ring-2 focus:ring-[#478BAF]"
+                    className="w-full rounded-lg border px-3 py-2 focus:border-[#478BAF] focus:outline-none focus:ring-2 focus:ring-[#478BAF]"
                     value={editForm.orderDeadline}
                     onChange={(e) =>
                       setEditForm({
@@ -556,8 +565,8 @@ const AdminPage = () => {
 
                   <div className="space-y-4">
                     {editForm.days.map((day, dayIndex) => (
-                      <div key={day.day} className="rounded-xl border p-4">
-                        <div className="flex items-center justify-between">
+                      <div key={day.day} className="rounded-xl border p-3 sm:p-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           <h3 className="font-bold">{day.day}</h3>
 
                           <Button
@@ -565,20 +574,20 @@ const AdminPage = () => {
                             onClick={() =>
                               setEditForm((prev) => addEditMeal(prev, dayIndex))
                             }
-                            className="hover:border-[#478BAF] hover:bg-gray-50 transition-colors duration-300"
+                            className="w-full transition-colors duration-300 hover:border-[#478BAF] hover:bg-gray-50 sm:w-auto"
                           >
                             + Добави ястие
                           </Button>
                         </div>
 
-                        <div className="mt-3 space-y-2">
+                        <div className="mt-3 space-y-3">
                           {day.meals.map((meal) => (
                             <div
                               key={meal.id}
                               className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_180px_140px_auto] sm:items-center"
                             >
                               <input
-                                className="w-full rounded-lg border px-3 py-2"
+                                className="w-full rounded-lg border px-3 py-2 focus:border-[#478BAF] focus:outline-none focus:ring-2 focus:ring-[#478BAF]"
                                 value={meal.name}
                                 onChange={(e) =>
                                   setEditForm((prev) =>
@@ -595,7 +604,7 @@ const AdminPage = () => {
                               />
 
                               <input
-                                className="w-full rounded-lg border px-3 py-2"
+                                className="w-full rounded-lg border px-3 py-2 focus:border-[#478BAF] focus:outline-none focus:ring-2 focus:ring-[#478BAF]"
                                 placeholder="Грамаж/Бройка"
                                 value={meal.weight || ""}
                                 onChange={(e) =>
@@ -614,7 +623,7 @@ const AdminPage = () => {
                               <div className="flex items-center gap-2">
                                 <input
                                   inputMode="decimal"
-                                  className="w-full rounded-lg border px-3 py-2"
+                                  className="w-full rounded-lg border px-3 py-2 focus:border-[#478BAF] focus:outline-none focus:ring-2 focus:ring-[#478BAF]"
                                   value={meal.price ?? ""}
                                   onChange={(e) =>
                                     setEditForm((prev) =>
@@ -629,7 +638,10 @@ const AdminPage = () => {
                                   }
                                   placeholder="Цена"
                                 />
-                                <span className="text-sm text-gray-600">€</span>
+
+                                <span className="shrink-0 text-sm text-gray-600">
+                                  €
+                                </span>
                               </div>
 
                               <Button
@@ -639,7 +651,7 @@ const AdminPage = () => {
                                     removeEditMeal(prev, dayIndex, meal.id),
                                   )
                                 }
-                                className="justify-self-start sm:justify-self-end hover:border-[#478BAF] transition-colors duration-300 hover:bg-gray-50"
+                                className="w-full transition-colors duration-300 hover:border-[#478BAF] hover:bg-gray-50 sm:w-auto"
                               >
                                 −
                               </Button>
@@ -650,21 +662,30 @@ const AdminPage = () => {
                     ))}
                   </div>
 
-                  <div className="flex flex-wrap gap-4">
-                    <ShinyButton href="#" onClick={saveEdits}>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                    <ShinyButton
+                      href="#"
+                      onClick={saveEdits}
+                      className="w-full sm:w-auto"
+                    >
                       {submiting ? (
                         <Loader2 className="animate-spin" />
                       ) : (
                         <span>Запази промените</span>
                       )}
                     </ShinyButton>
-                    <Button variant="outline" onClick={cancelEditing}>
+
+                    <Button
+                      variant="outline"
+                      onClick={cancelEditing}
+                      className="w-full sm:w-auto"
+                    >
                       Откажи
                     </Button>
                   </div>
                 </>
               ) : (
-                <p className="text-gray-600">
+                <p className="text-sm text-gray-600 sm:text-base">
                   {new Date(weeklyMenu.weekStart).toLocaleDateString()} –{" "}
                   {new Date(weeklyMenu.weekEnd).toLocaleDateString()}
                 </p>

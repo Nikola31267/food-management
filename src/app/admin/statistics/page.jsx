@@ -1,4 +1,5 @@
 "use client";
+
 import { DashboardHeader } from "@/components/dashboard/header";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { PaymentStatus } from "@/components/dashboard/payment-status";
@@ -11,15 +12,16 @@ import Loader from "@/components/layout/Loader";
 
 export default function DashboardPage() {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        // Cookie sent automatically — no token needed
         const response = await axios.get("/api/auth/user");
+
         setUser(response.data);
+
         if (response.data.role !== "admin") {
           router.push("/dashboard");
         }
@@ -32,23 +34,23 @@ export default function DashboardPage() {
     };
 
     fetchUserProfile();
-  }, []);
+  }, [router]);
 
   if (loading) return <Loader />;
 
   return (
     <div className="min-h-screen bg-background">
       <SidebarNav user={user} />
-      <main
-        style={{ paddingLeft: "var(--sidebar-width, 16rem)" }}
-        className="transition-all duration-300"
-      >
-        <div className="px-4 py-6 sm:px-6 lg:px-8">
+
+      <main className="min-h-screen transition-all duration-300 md:pl-[var(--sidebar-width,16rem)]">
+        <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
           <DashboardHeader />
+
           <div className="mt-6">
             <StatsCards />
           </div>
-          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+
+          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
             <PaymentStatus />
             <PopularItems />
           </div>

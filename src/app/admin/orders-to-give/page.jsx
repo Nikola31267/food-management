@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { Check, X, Loader2, Trash } from "lucide-react";
@@ -6,12 +7,11 @@ import Loader from "@/components/layout/Loader";
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
 import { ShinyButton } from "@/components/ui/shiny-button";
 
-// Removed getToken() and authHeaders() — cookies are sent automatically
-
 const DAYS = ["Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък"];
 
 const formatDate = (dateStr) => {
   if (!dateStr) return "—";
+
   return new Date(dateStr).toLocaleDateString("bg-BG", {
     day: "2-digit",
     month: "2-digit",
@@ -23,6 +23,7 @@ const weekKey = (weekStart, weekEnd) => `${weekStart}__${weekEnd}`;
 
 const buildDayMeals = (orders = []) => {
   const map = {};
+
   DAYS.forEach(
     (d) =>
       (map[d] = {
@@ -35,17 +36,21 @@ const buildDayMeals = (orders = []) => {
 
   orders.forEach((weeklyOrder, weeklyOrderIndex) => {
     const days = weeklyOrder?.days ?? [];
+
     days.forEach((dayEntry, dayIndex) => {
       const dayName = dayEntry?.day;
+
       if (dayName && map[dayName] !== undefined) {
         dayEntry?.meals?.forEach((m) => {
-          if (m?.mealName)
+          if (m?.mealName) {
             map[dayName].meals.push({
               name: m.mealName,
               quantity: m.quantity,
               price: m.price,
             });
+          }
         });
+
         map[dayName].orderGot = Boolean(dayEntry?.orderGot);
         map[dayName].weeklyOrderIndex = weeklyOrderIndex;
         map[dayName].dayIndex = dayIndex;
@@ -68,6 +73,7 @@ export default function ArchivedOrdersPage() {
   const [selectedWeek, setSelectedWeek] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedDay, setSelectedDay] = useState("");
+
   const ordersPerPage = 5;
 
   const classes = useMemo(() => [...new Set(rows.map((r) => r.grade))], [rows]);
@@ -93,9 +99,10 @@ export default function ArchivedOrdersPage() {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        // Cookie sent automatically — no token needed
         const response = await axios.get("/api/auth/user");
+
         setUser(response.data);
+
         if (response.data.role !== "admin") {
           window.location.href = "/dashboard";
         }
@@ -116,10 +123,10 @@ export default function ArchivedOrdersPage() {
       setLoading(true);
       setError(null);
 
-      // Cookie sent automatically — no token needed
       const { data } = await axios.get("/api/archived-orders");
 
       const flat = [];
+
       data.data.forEach((student) => {
         student.archivedOrders.forEach((order) => {
           flat.push({
@@ -143,6 +150,7 @@ export default function ArchivedOrdersPage() {
           : err.response?.status === 403
             ? "Нямате администраторски права."
             : (err.response?.data?.message ?? "Грешка при зареждане.");
+
       setError(msg);
     } finally {
       setLoading(false);
@@ -157,34 +165,38 @@ export default function ArchivedOrdersPage() {
     setCurrentPage(1);
   }, [searchTerm, selectedClass, selectedWeek, selectedDay]);
 
-  // Auto-select current week and day
   useEffect(() => {
     if (rows.length === 0) return;
 
     const today = new Date();
     const todayTime = today.getTime();
 
-    // Auto-select week
     const matchingWeek = weeks.find((w) => {
       const [startStr, endStr] = w.key.split("__");
       const start = new Date(startStr).getTime();
-      const end = new Date(endStr).getTime() + 86400000; // inclusive
+      const end = new Date(endStr).getTime() + 86400000;
+
       return todayTime >= start && todayTime <= end;
     });
-    if (matchingWeek && !selectedWeek) setSelectedWeek(matchingWeek.key);
 
-    // Auto-select day (0=Sun,1=Mon,...,5=Fri,6=Sat)
-    const dayIndex = today.getDay(); // 1=Mon ... 5=Fri
-    if (dayIndex >= 1 && dayIndex <= 5 && !selectedDay) {
-      setSelectedDay(DAYS[dayIndex - 1]); // DAYS[0]=Понеделник ... DAYS[4]=Петък
+    if (matchingWeek && !selectedWeek) {
+      setSelectedWeek(matchingWeek.key);
     }
-  }, [rows]);
+
+    const dayIndex = today.getDay();
+
+    if (dayIndex >= 1 && dayIndex <= 5 && !selectedDay) {
+      setSelectedDay(DAYS[dayIndex - 1]);
+    }
+  }, [rows, weeks, selectedWeek, selectedDay]);
 
   const handleToggleOrderGot = async (row, day) => {
     const dayData = row.dayMeals[day];
+
     if (!dayData || dayData.meals.length === 0) return;
 
     const key = `${row.orderId}-${day}`;
+
     setTogglingKey(key);
 
     try {
@@ -197,10 +209,10 @@ export default function ArchivedOrdersPage() {
         },
       );
 
-      // Update only the specific row+day in local state — no full refetch
       setRows((prev) =>
         prev.map((r) => {
           if (r.orderId !== row.orderId) return r;
+
           return {
             ...r,
             dayMeals: {
@@ -223,11 +235,13 @@ export default function ArchivedOrdersPage() {
   const handleDelete = async (orderId) => {
     if (
       !confirm("Сигурни ли сте, че искате да изтриете тази архивирана поръчка?")
-    )
+    ) {
       return;
+    }
+
     setDeletingId(orderId);
+
     try {
-      // Cookie sent automatically — no token needed
       await axios.delete(`/api/archived-orders/${orderId}`);
       await fetchArchivedOrders();
     } catch (err) {
@@ -237,18 +251,40 @@ export default function ArchivedOrdersPage() {
           : err.response?.status === 403
             ? "Нямате администраторски права."
             : (err.response?.data?.message ?? "Грешка при изтриване.");
+
       alert(`Грешка: ${msg}`);
     } finally {
       setDeletingId(null);
     }
   };
 
+  const filteredRows = rows.filter((r) => {
+    const matchesName = (r.fullName || "")
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+
+    const matchesClass = selectedClass ? r.grade === selectedClass : true;
+
+    const matchesWeek = selectedWeek
+      ? weekKey(r.weekStart, r.weekEnd) === selectedWeek
+      : true;
+
+    const matchesDay = selectedDay
+      ? r.dayMeals[selectedDay]?.meals.length > 0
+      : true;
+
+    return matchesName && matchesClass && matchesWeek && matchesDay;
+  });
+
   const downloadOrders = async () => {
     const filteredOrderIds = filteredRows.map((r) => r.orderId).join(",");
-    const url = `/api/archived-orders/download?orderIds=${encodeURIComponent(filteredOrderIds)}`;
 
-    // credentials: "include" sends the cookie automatically
+    const url = `/api/archived-orders/download?orderIds=${encodeURIComponent(
+      filteredOrderIds,
+    )}`;
+
     const res = await fetch(url, { credentials: "include" });
+
     if (!res.ok) {
       const data = await res.json().catch(() => null);
       throw new Error(data?.message || "Failed to download file");
@@ -259,29 +295,42 @@ export default function ArchivedOrdersPage() {
     let filename = "archived-orders.xlsx";
     const cd = res.headers.get("content-disposition") || "";
     const match = cd.match(/filename="([^"]+)"/i);
+
     if (match?.[1]) filename = match[1];
 
     const a = document.createElement("a");
     const objectUrl = window.URL.createObjectURL(blob);
+
     a.href = objectUrl;
     a.download = filename;
+
     document.body.appendChild(a);
     a.click();
     a.remove();
+
     window.URL.revokeObjectURL(objectUrl);
   };
+
+  const totalPages = Math.ceil(filteredRows.length / ordersPerPage);
+
+  const paginatedRows = filteredRows.slice(
+    (currentPage - 1) * ordersPerPage,
+    currentPage * ordersPerPage,
+  );
 
   if (loading) return <Loader />;
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md text-center">
-          <p className="text-red-600 font-medium">Грешка</p>
-          <p className="text-red-500 text-sm mt-1">{error}</p>
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+        <div className="w-full max-w-md rounded-lg border border-red-200 bg-red-50 p-6 text-center">
+          <p className="font-medium text-red-600">Грешка</p>
+
+          <p className="mt-1 text-sm text-red-500">{error}</p>
+
           <button
             onClick={fetchArchivedOrders}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors"
+            className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-sm text-white transition-colors hover:bg-red-700"
           >
             Опитай отново
           </button>
@@ -290,248 +339,265 @@ export default function ArchivedOrdersPage() {
     );
   }
 
-  const filteredRows = rows.filter((r) => {
-    const matchesName = (r.fullName || "")
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchesClass = selectedClass ? r.grade === selectedClass : true;
-    const matchesWeek = selectedWeek
-      ? weekKey(r.weekStart, r.weekEnd) === selectedWeek
-      : true;
-    // If a day is selected, only keep rows that have meals on that day
-    const matchesDay = selectedDay
-      ? r.dayMeals[selectedDay]?.meals.length > 0
-      : true;
-    return matchesName && matchesClass && matchesWeek && matchesDay;
-  });
-
-  const totalPages = Math.ceil(filteredRows.length / ordersPerPage);
-  const paginatedRows = filteredRows.slice(
-    (currentPage - 1) * ordersPerPage,
-    currentPage * ordersPerPage,
-  );
-
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <SidebarNav user={user} />
-      <main
-        style={{ paddingLeft: "var(--sidebar-width, 16rem)" }}
-        className="transition-all duration-300"
-      >
-        <div className="p-8 min-h-screen bg-gray-50">
-          <h1 className="text-3xl font-bold mb-6">Поръчки за даване</h1>
 
-          <div className="flex flex-row items-center justify-center gap-2 mb-4">
-            <input
-              type="text"
-              placeholder="Търси по име..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="p-3 border rounded-full w-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
-            />
-            <div className="flex gap-2">
-              <select
-                value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
-                className="p-3 border rounded-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
-              >
-                <option value="">Всички класове</option>
-                {classes.map((grade) => (
-                  <option key={grade} value={grade}>
-                    {grade}
-                  </option>
-                ))}
-              </select>
+      <main className="min-h-screen transition-all duration-300 md:pl-[var(--sidebar-width,16rem)]">
+        <div className="min-h-screen bg-gray-50 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          <div className="mx-auto max-w-7xl">
+            <h1 className="mb-6 text-2xl font-bold sm:text-3xl">
+              Поръчки за даване
+            </h1>
 
-              <select
-                value={selectedWeek}
-                onChange={(e) => setSelectedWeek(e.target.value)}
-                className="p-3 border rounded-full outline-none focus:ring-2 focus:ring-[#478BAF] focus:border-[#478BAF]"
-              >
-                <option value="">Всички седмици</option>
-                {weeks.map((w) => (
-                  <option key={w.key} value={w.key}>
-                    {w.label}
-                  </option>
-                ))}
-              </select>
+            <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+              <input
+                type="text"
+                placeholder="Търси по име..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-full border p-3 outline-none focus:border-[#478BAF] focus:ring-2 focus:ring-[#478BAF]"
+              />
+
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:w-auto lg:min-w-[520px]">
+                <select
+                  value={selectedClass}
+                  onChange={(e) => setSelectedClass(e.target.value)}
+                  className="w-full rounded-full border p-3 outline-none focus:border-[#478BAF] focus:ring-2 focus:ring-[#478BAF]"
+                >
+                  <option value="">Всички класове</option>
+
+                  {classes.map((grade) => (
+                    <option key={grade} value={grade}>
+                      {grade}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={selectedWeek}
+                  onChange={(e) => setSelectedWeek(e.target.value)}
+                  className="w-full rounded-full border p-3 outline-none focus:border-[#478BAF] focus:ring-2 focus:ring-[#478BAF]"
+                >
+                  <option value="">Всички седмици</option>
+
+                  {weeks.map((w) => (
+                    <option key={w.key} value={w.key}>
+                      {w.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
-          {/* Day filter pills */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            <button
-              onClick={() => setSelectedDay("")}
-              className={`px-4 py-1.5 rounded-full border text-sm font-medium transition-colors duration-200 ${
-                selectedDay === ""
-                  ? "bg-[#478BAF] text-white border-[#478BAF]"
-                  : "border-gray-300 hover:border-[#478BAF] hover:text-[#478BAF]"
-              }`}
-            >
-              Всички дни
-            </button>
-            {DAYS.map((day) => (
+
+            <div className="mb-4 flex flex-wrap gap-2">
               <button
-                key={day}
-                onClick={() => setSelectedDay(day === selectedDay ? "" : day)}
-                className={`px-4 py-1.5 rounded-full border text-sm font-medium transition-colors duration-200 ${
-                  selectedDay === day
-                    ? "bg-[#478BAF] text-white border-[#478BAF]"
+                onClick={() => setSelectedDay("")}
+                className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors duration-200 ${
+                  selectedDay === ""
+                    ? "border-[#478BAF] bg-[#478BAF] text-white"
                     : "border-gray-300 hover:border-[#478BAF] hover:text-[#478BAF]"
                 }`}
               >
-                {day}
+                Всички дни
               </button>
-            ))}
-          </div>
 
-          {filteredRows.length > 0 && (
-            <div className="flex gap-2 mb-4 relative z-0">
-              <ShinyButton onClick={downloadOrders} href="/" className="p-2">
-                Изтегли поръчките за седмицата
-              </ShinyButton>
+              {DAYS.map((day) => (
+                <button
+                  key={day}
+                  onClick={() => setSelectedDay(day === selectedDay ? "" : day)}
+                  className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors duration-200 ${
+                    selectedDay === day
+                      ? "border-[#478BAF] bg-[#478BAF] text-white"
+                      : "border-gray-300 hover:border-[#478BAF] hover:text-[#478BAF]"
+                  }`}
+                >
+                  {day}
+                </button>
+              ))}
             </div>
-          )}
 
-          {filteredRows.length === 0 ? (
-            <p>Няма намерени архивирани поръчки.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border">
-                <thead>
-                  <tr className="bg-gray-200">
-                    <th className="border p-2">Име</th>
-                    <th className="border p-2">Клас</th>
-                    <th className="border p-2">Седмица</th>
-                    <th className="border p-2">Поръчка</th>
-                    <th className="border p-2">Сума (€)</th>
-                    <th className="border p-2">Действия</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {paginatedRows.map((row) => (
-                    <tr key={row.orderId} className="border-b">
-                      <td className="border p-2">{row.fullName}</td>
-                      <td className="border p-2">{row.grade}</td>
-                      <td className="border p-2 whitespace-nowrap text-sm">
-                        {formatDate(row.weekStart)} → {formatDate(row.weekEnd)}
-                      </td>
-                      <td className="border p-2">
-                        {(selectedDay ? [selectedDay] : DAYS).map((day) => {
-                          const dayData = row.dayMeals[day];
-                          const meals = dayData.meals;
-                          const got = dayData.orderGot;
-                          const toggleKey = `${row.orderId}-${day}`;
-                          const isToggling = togglingKey === toggleKey;
-                          const hasOrder = meals.length > 0;
-
-                          if (!hasOrder) return null;
-
-                          return (
-                            <div key={day} className="mb-3">
-                              <div className="flex items-center gap-3 flex-wrap">
-                                <strong>{day}:</strong>
-                                <span className="text-xs text-gray-700">
-                                  Получено:
-                                </span>
-                                <span
-                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                                    got
-                                      ? "bg-green-100 text-green-700"
-                                      : "bg-red-100 text-red-700"
-                                  }`}
-                                >
-                                  {got ? (
-                                    <>
-                                      <Check className="w-4 h-4" /> Да
-                                    </>
-                                  ) : (
-                                    <>
-                                      <X className="w-4 h-4" /> Не
-                                    </>
-                                  )}
-                                </span>
-                                <button
-                                  type="button"
-                                  disabled={isToggling}
-                                  onClick={() => handleToggleOrderGot(row, day)}
-                                  className={`text-xs px-2 py-1 rounded border transition-colors disabled:opacity-50 ${
-                                    got
-                                      ? "border-red-300 hover:bg-red-50"
-                                      : "border-green-300 hover:bg-green-50"
-                                  }`}
-                                >
-                                  {isToggling ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : got ? (
-                                    "Отмени"
-                                  ) : (
-                                    "Отбележи"
-                                  )}
-                                </button>
-                              </div>
-                              <ul className="ml-4 mt-1">
-                                {meals.map((meal, i) => (
-                                  <li key={i}>
-                                    {meal.name} x {meal.quantity} = €
-                                    {(
-                                      (meal.price ?? 0) * (meal.quantity ?? 1)
-                                    ).toFixed(2)}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          );
-                        })}
-                      </td>
-                      <td className="border p-2 font-bold">
-                        €
-                        {new Intl.NumberFormat("de-DE", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        }).format(row.total)}
-                      </td>
-                      <td className="border p-2 text-center">
-                        <button
-                          onClick={() => handleDelete(row.orderId)}
-                          disabled={deletingId === row.orderId}
-                          className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors duration-300 disabled:opacity-50"
-                        >
-                          {deletingId === row.orderId ? (
-                            <Loader2 className="animate-spin" />
-                          ) : (
-                            <Trash />
-                          )}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <div className="flex justify-center items-center gap-4 mt-6">
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 border border-[#478BAF] hover:bg-[#478BAF] transition-colors duration-300 hover:text-white rounded-lg disabled:opacity-50"
+            {filteredRows.length > 0 && (
+              <div className="relative z-0 mb-4">
+                <ShinyButton
+                  onClick={downloadOrders}
+                  href="/"
+                  className="w-full p-2 sm:w-auto"
                 >
-                  Previous
-                </button>
-                <span className="font-semibold">
-                  Page {currentPage} of {totalPages || 1}
-                </span>
-                <button
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(p + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 border border-[#478BAF] hover:bg-[#478BAF] transition-colors duration-300 hover:text-white rounded-lg disabled:opacity-50"
-                >
-                  Next
-                </button>
+                  Изтегли поръчките за седмицата
+                </ShinyButton>
               </div>
-            </div>
-          )}
+            )}
+
+            {filteredRows.length === 0 ? (
+              <div className="rounded-xl border bg-white p-4 shadow-sm">
+                <p>Няма намерени архивирани поръчки.</p>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-[980px] w-full border-collapse text-sm">
+                      <thead>
+                        <tr className="bg-gray-200">
+                          <th className="border p-2 text-left">Име</th>
+                          <th className="border p-2 text-left">Клас</th>
+                          <th className="border p-2 text-left">Седмица</th>
+                          <th className="border p-2 text-left">Поръчка</th>
+                          <th className="border p-2 text-left">Сума (€)</th>
+                          <th className="border p-2 text-center">Действия</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {paginatedRows.map((row) => (
+                          <tr key={row.orderId} className="border-b align-top">
+                            <td className="border p-2 font-medium">
+                              {row.fullName}
+                            </td>
+
+                            <td className="border p-2">{row.grade}</td>
+
+                            <td className="whitespace-nowrap border p-2 text-sm">
+                              {formatDate(row.weekStart)} →{" "}
+                              {formatDate(row.weekEnd)}
+                            </td>
+
+                            <td className="border p-2">
+                              <div className="space-y-3">
+                                {(selectedDay ? [selectedDay] : DAYS).map(
+                                  (day) => {
+                                    const dayData = row.dayMeals[day];
+                                    const meals = dayData.meals;
+                                    const got = dayData.orderGot;
+                                    const toggleKey = `${row.orderId}-${day}`;
+                                    const isToggling =
+                                      togglingKey === toggleKey;
+                                    const hasOrder = meals.length > 0;
+
+                                    if (!hasOrder) return null;
+
+                                    return (
+                                      <div key={day}>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <strong>{day}:</strong>
+
+                                          <span className="text-xs text-gray-700">
+                                            Получено:
+                                          </span>
+
+                                          <span
+                                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                              got
+                                                ? "bg-green-100 text-green-700"
+                                                : "bg-red-100 text-red-700"
+                                            }`}
+                                          >
+                                            {got ? (
+                                              <>
+                                                <Check className="h-4 w-4" /> Да
+                                              </>
+                                            ) : (
+                                              <>
+                                                <X className="h-4 w-4" /> Не
+                                              </>
+                                            )}
+                                          </span>
+
+                                          <button
+                                            type="button"
+                                            disabled={isToggling}
+                                            onClick={() =>
+                                              handleToggleOrderGot(row, day)
+                                            }
+                                            className={`rounded border px-2 py-1 text-xs transition-colors disabled:opacity-50 ${
+                                              got
+                                                ? "border-red-300 hover:bg-red-50"
+                                                : "border-green-300 hover:bg-green-50"
+                                            }`}
+                                          >
+                                            {isToggling ? (
+                                              <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : got ? (
+                                              "Отмени"
+                                            ) : (
+                                              "Отбележи"
+                                            )}
+                                          </button>
+                                        </div>
+
+                                        <ul className="ml-4 mt-1 list-disc space-y-1">
+                                          {meals.map((meal, i) => (
+                                            <li key={i}>
+                                              {meal.name} x {meal.quantity} = €
+                                              {(
+                                                (meal.price ?? 0) *
+                                                (meal.quantity ?? 1)
+                                              ).toFixed(2)}
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    );
+                                  },
+                                )}
+                              </div>
+                            </td>
+
+                            <td className="whitespace-nowrap border p-2 font-bold">
+                              €
+                              {new Intl.NumberFormat("de-DE", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              }).format(row.total)}
+                            </td>
+
+                            <td className="border p-2 text-center">
+                              <button
+                                onClick={() => handleDelete(row.orderId)}
+                                disabled={deletingId === row.orderId}
+                                className="inline-flex items-center justify-center rounded bg-red-600 px-3 py-2 text-white transition-colors duration-300 hover:bg-red-700 disabled:opacity-50"
+                              >
+                                {deletingId === row.orderId ? (
+                                  <Loader2 className="animate-spin" />
+                                ) : (
+                                  <Trash size={18} />
+                                )}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="w-full rounded-lg border border-[#478BAF] px-4 py-2 transition-colors duration-300 hover:bg-[#478BAF] hover:text-white disabled:opacity-50 sm:w-auto"
+                  >
+                    Previous
+                  </button>
+
+                  <span className="font-semibold">
+                    Page {currentPage} of {totalPages || 1}
+                  </span>
+
+                  <button
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(p + 1, totalPages))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="w-full rounded-lg border border-[#478BAF] px-4 py-2 transition-colors duration-300 hover:bg-[#478BAF] hover:text-white disabled:opacity-50 sm:w-auto"
+                  >
+                    Next
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </main>
     </div>
